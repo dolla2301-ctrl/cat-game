@@ -51,16 +51,16 @@ export class Menu extends Phaser.Scene {
         this.add.image(640, 360, 'background').setDisplaySize(1280, 720);
 
         // Заголовок
-        this.add.text(640, 60, 'Добрячки', {
+        this.add.text(640, 60, 'ДОБРЯЧКИ', {
             fontSize: '56px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
         }).setOrigin(0.5);
 
         // --- КОТ В МЕНЮ ---
         let equipped = this.registry.get('equipped') || { jacket: 'jacket1', hat: 'hat1', hand: 'hand1' };
 
-        this.previewBody = this.add.image(700, 260, equipped.jacket).setDepth(0);
-        this.previewHat  = this.add.image(700, 260, equipped.hat).setDepth(1);
-        this.previewHand = this.add.image(700, 260, equipped.hand).setDepth(2);
+        this.previewBody = this.add.image(700, 225, equipped.jacket).setDepth(0);
+        this.previewHat  = this.add.image(700, 225, equipped.hat).setDepth(1);
+        this.previewHand = this.add.image(700, 225, equipped.hand).setDepth(2);
 
         const scale = 1.3;
         this.previewBody.setScale(scale);
@@ -68,10 +68,23 @@ export class Menu extends Phaser.Scene {
         this.previewHand.setScale(scale);
 
         // --- КНОПКИ ---
-        this.createButton(640, 440, 'НАЧАТЬ ИГРУ', () => this.scene.start('Start'));
-        this.createButton(640, 510, 'КАСТОМИЗАЦИЯ', () => this.scene.start('Wardrobe'));
-        this.createButton(640, 580, 'НАСТРОЙКИ', () => this.scene.start('Settings'));
-        this.createButton(640, 650, 'СЧЁТ', () => this.scene.start('Scores'));
+        this.createButton(640, 400, 'НАЧАТЬ ИГРУ', () => this.scene.start('Start'));
+
+        // Кнопка «ДОНАТ АВТОРУ» — золотая, под «НАЧАТЬ ИГРУ»
+        const donateBtn = this.add.text(640, 460, 'ДОНАТ АВТОРУ', {
+            fontSize: '28px', color: '#ffffff', backgroundColor: '#aa8800',
+            padding: { x: 20, y: 10 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        donateBtn.on('pointerover', () => donateBtn.setBackgroundColor('#ccaa22'));
+        donateBtn.on('pointerout', () => donateBtn.setBackgroundColor('#aa8800'));
+        donateBtn.on('pointerdown', () => {
+            window.open('https://www.donationalerts.com/r/donutdobrychki', '_blank');
+        });
+
+        this.createButton(640, 520, 'НАСТРОЙКИ', () => this.scene.start('Settings'));
+        this.createButton(640, 580, 'ОДЕЖДА', () => this.scene.start('Wardrobe'));
+        this.createButton(640, 640, 'СЧЁТ', () => this.scene.start('Scores'));
     }
 
     createButton(x, y, text, onClick) {
