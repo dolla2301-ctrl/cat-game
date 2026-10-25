@@ -12,14 +12,16 @@ export class Settings extends Phaser.Scene {
 
         // Заголовок
         this.add.text(640, 60, 'НАСТРОЙКИ', {
-            fontSize: '56px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
+            fontSize: '56px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold',
+            backgroundColor: '#00000088', padding: { x: 20, y: 10 }
         }).setOrigin(0.5);
 
         // ============================================================
         // БЛОК 1: УПРАВЛЕНИЕ
         // ============================================================
         this.add.text(640, 140, 'Способ управления:', {
-            fontSize: '30px', color: '#dddddd', fontFamily: 'Arial'
+            fontSize: '30px', color: '#ffffff', fontFamily: 'Arial',
+            backgroundColor: '#00000088', padding: { x: 15, y: 8 }
         }).setOrigin(0.5);
 
         this.controlMode = this.registry.get('controlMode')
@@ -60,7 +62,8 @@ export class Settings extends Phaser.Scene {
         // БЛОК 2: ГРОМКОСТЬ МУЗЫКИ (5 квадратиков)
         // ============================================================
         this.add.text(640, 330, 'Громкость музыки:', {
-            fontSize: '30px', color: '#dddddd', fontFamily: 'Arial'
+            fontSize: '30px', color: '#ffffff', fontFamily: 'Arial',
+            backgroundColor: '#00000088', padding: { x: 15, y: 8 }
         }).setOrigin(0.5);
 
         this.musicVolume = parseFloat(localStorage.getItem('musicVolume') ?? '0.5');
