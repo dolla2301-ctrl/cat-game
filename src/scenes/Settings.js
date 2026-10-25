@@ -10,23 +10,26 @@ export class Settings extends Phaser.Scene {
     create() {
         this.add.image(640, 360, 'background').setDisplaySize(1280, 720);
 
-        this.add.text(640, 80, 'Управление', {
-            fontSize: '48px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
+        // Заголовок
+        this.add.text(640, 60, 'НАСТРОЙКИ', {
+            fontSize: '56px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        // Читаем текущий выбор (по умолчанию — клавиатура)
+        // ============================================================
+        // БЛОК 1: УПРАВЛЕНИЕ
+        // ============================================================
+        this.add.text(640, 140, 'Способ управления:', {
+            fontSize: '30px', color: '#dddddd', fontFamily: 'Arial'
+        }).setOrigin(0.5);
+
         this.controlMode = this.registry.get('controlMode')
             || localStorage.getItem('controlMode')
             || 'mouse';
 
-        this.add.text(640, 220, 'Способ управления:', {
-            fontSize: '32px', color: '#dddddd', fontFamily: 'Arial'
-        }).setOrigin(0.5);
-
         // Кнопка "КЛАВИАТУРА"
-        this.keyboardBtn = this.add.text(480, 340, '⌨ КЛАВИАТУРА', {
-            fontSize: '28px', color: '#ffffff', backgroundColor: '#444444',
-            padding: { x: 25, y: 15 }
+        this.keyboardBtn = this.add.text(430, 210, '⌨ КЛАВИАТУРА', {
+            fontSize: '26px', color: '#ffffff', backgroundColor: '#444444',
+            padding: { x: 22, y: 12 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         this.keyboardBtn.on('pointerover', () => {
@@ -38,9 +41,9 @@ export class Settings extends Phaser.Scene {
         this.keyboardBtn.on('pointerdown', () => this.setMode('keyboard'));
 
         // Кнопка "МЫШЬ / СЕНСОР"
-        this.mouseBtn = this.add.text(800, 340, '🖱 МЫШЬ / СЕНСОР', {
-            fontSize: '28px', color: '#ffffff', backgroundColor: '#444444',
-            padding: { x: 25, y: 15 }
+        this.mouseBtn = this.add.text(850, 210, '🖱 МЫШЬ / СЕНСОР', {
+            fontSize: '26px', color: '#ffffff', backgroundColor: '#444444',
+            padding: { x: 22, y: 12 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         this.mouseBtn.on('pointerover', () => {
@@ -51,20 +54,51 @@ export class Settings extends Phaser.Scene {
         });
         this.mouseBtn.on('pointerdown', () => this.setMode('mouse'));
 
-        // Подсказка
-        this.add.text(640, 450,
-            'КЛАВИАТУРА: стрелки ←→↑↓\n' +
-            'МЫШЬ / СЕНСОР: тап по левой/правой части экрана — прыжок,\nтап по центру сверху — прыжок вверх',
-            {
-                fontSize: '20px', color: '#aaaaaa', fontFamily: 'Arial',
-                align: 'center', lineSpacing: 8
-            }
-        ).setOrigin(0.5);
-
         this.highlightCurrent();
 
-        // Кнопка "НАЗАД"
-        const backBtn = this.add.text(640, 660, 'НАЗАД', {
+        // ============================================================
+        // БЛОК 2: ГРОМКОСТЬ МУЗЫКИ (5 квадратиков)
+        // ============================================================
+        this.add.text(640, 330, 'Громкость музыки:', {
+            fontSize: '30px', color: '#dddddd', fontFamily: 'Arial'
+        }).setOrigin(0.5);
+
+        this.musicVolume = parseFloat(localStorage.getItem('musicVolume') ?? '0.5');
+        this.musicVolume = Math.max(0, Math.min(1, this.musicVolume));
+
+        this.volumeButtons = [];
+        const volumeSteps = [0, 0.25, 0.5, 0.75, 1.0];
+        const volumeLabels = ['0%', '25%', '50%', '75%', '100%'];
+
+        volumeSteps.forEach((step, i) => {
+            const x = 380 + i * 130;
+            const y = 400;
+
+            const bg = this.add.rectangle(x, y, 100, 60, 0x444444)
+                .setInteractive({ useHandCursor: true });
+
+            const label = this.add.text(x, y, volumeLabels[i], {
+                fontSize: '24px', color: '#ffffff', fontFamily: 'Arial',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+
+            bg.on('pointerover', () => {
+                if (Math.abs(this.musicVolume - step) > 0.01) bg.setFillStyle(0x666666);
+            });
+            bg.on('pointerout', () => {
+                if (Math.abs(this.musicVolume - step) > 0.01) bg.setFillStyle(0x444444);
+            });
+            bg.on('pointerdown', () => this.setVolume(step));
+
+            this.volumeButtons.push({ bg, label, step });
+        });
+
+        this.highlightVolume();
+
+        // ============================================================
+        // КНОПКА "НАЗАД"
+        // ============================================================
+        const backBtn = this.add.text(640, 620, 'НАЗАД', {
             fontSize: '32px', color: '#ffffff', backgroundColor: '#884444',
             padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -91,5 +125,34 @@ export class Settings extends Phaser.Scene {
             this.keyboardBtn.setBackgroundColor('#444444');
             this.mouseBtn.setBackgroundColor('#44aa44');
         }
+    }
+
+    setVolume(step) {
+        this.musicVolume = step;
+        localStorage.setItem('musicVolume', String(step));
+
+        // Применяем громкость к музыке, если она играет
+        const bgMusic = this.sound.get('bgMusic');
+        if (bgMusic) {
+            if (step > 0) {
+                if (!bgMusic.isPlaying) bgMusic.play();
+                bgMusic.setVolume(step);
+            } else {
+                if (bgMusic.isPlaying) bgMusic.pause();
+                bgMusic.setVolume(0);
+            }
+        }
+
+        this.highlightVolume();
+    }
+
+    highlightVolume() {
+        this.volumeButtons.forEach(v => {
+            if (Math.abs(v.step - this.musicVolume) < 0.01) {
+                v.bg.setFillStyle(0x44aa44);
+            } else {
+                v.bg.setFillStyle(0x444444);
+            }
+        });
     }
 }
