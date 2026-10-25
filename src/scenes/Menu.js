@@ -58,9 +58,9 @@ export class Menu extends Phaser.Scene {
         // --- КОТ В МЕНЮ ---
         let equipped = this.registry.get('equipped') || { jacket: 'jacket1', hat: 'hat1', hand: 'hand1' };
 
-        this.previewBody = this.add.image(640, 260, equipped.jacket).setDepth(0);
-        this.previewHat  = this.add.image(640, 260, equipped.hat).setDepth(1);
-        this.previewHand = this.add.image(640, 260, equipped.hand).setDepth(2);
+        this.previewBody = this.add.image(700, 260, equipped.jacket).setDepth(0);
+        this.previewHat  = this.add.image(700, 260, equipped.hat).setDepth(1);
+        this.previewHand = this.add.image(700, 260, equipped.hand).setDepth(2);
 
         const scale = 1.3;
         this.previewBody.setScale(scale);
