@@ -12,6 +12,10 @@ const config = {
     backgroundColor: '#000000',
     pixelArt: true,
     roundPixels: true,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
     scene: [Menu, Wardrobe, Start, Scores, Settings]
 };
 
