@@ -33,7 +33,6 @@ export class Start extends Phaser.Scene {
         this.gameOver = false;
         this.isPaused = false;
         this.isJumping = false;
-        this.isAirborne = false;
         this.lives = 3;
         this.score = 0;
 
@@ -145,7 +144,7 @@ export class Start extends Phaser.Scene {
     }
 
     // ============================================================
-    // ПРИВЯЗКА УПРАВЛЕНИЯ
+    // ПРИВЯЗКА УПРАВЛЕНИЯ (только влево/вправо, без вверх и пробела)
     // ============================================================
     bindControls() {
         this.input.keyboard.off('keydown-LEFT');
@@ -157,17 +156,10 @@ export class Start extends Phaser.Scene {
         if (this.controlMode === 'keyboard') {
             this.input.keyboard.on('keydown-LEFT', () => this.tryJump(-108));
             this.input.keyboard.on('keydown-RIGHT', () => this.tryJump(108));
-            this.input.keyboard.on('keydown-UP', () => this.tryJumpUp());
-            this.input.keyboard.on('keydown-DOWN', () => this.tryDuck());
         } else {
             this.input.on('pointerdown', (pointer) => {
                 if (this.gameOver || this.isPaused) return;
                 if (pointer.x > 1100 && pointer.y < 80) return;
-
-                if (pointer.y < 240) {
-                    this.tryJumpUp();
-                    return;
-                }
 
                 if (pointer.x < 640) this.tryJump(-108);
                 else this.tryJump(108);
@@ -180,7 +172,7 @@ export class Start extends Phaser.Scene {
     // ============================================================
     tryJump(distanceX) {
         if (this.gameOver || this.isPaused) return;
-        if (this.isJumping || this.isAirborne) return;
+        if (this.isJumping) return;
 
         const newX = this.cat.x + distanceX;
         if (newX < 50 || newX > 1230) return;
@@ -206,43 +198,6 @@ export class Start extends Phaser.Scene {
             yoyo: true,
             onComplete: () => { this.cat.y = startY; }
         });
-    }
-
-    // ============================================================
-    // ПРЫЖОК ВВЕРХ
-    // ============================================================
-    tryJumpUp() {
-        if (this.gameOver || this.isPaused) return;
-        if (this.isAirborne || this.isJumping) return;
-
-        this.isAirborne = true;
-        const startY = this.cat.y;
-        const jumpHeight = 150;
-        const duration = 180;
-
-        this.tweens.add({
-            targets: this.cat,
-            y: startY - jumpHeight,
-            duration: duration,
-            ease: 'Quad.easeOut',
-            yoyo: true,
-            onComplete: () => {
-                this.cat.y = startY;
-                this.isAirborne = false;
-            }
-        });
-    }
-
-    // ============================================================
-    // ПРИСЕСТЬ
-    // ============================================================
-    tryDuck() {
-        if (this.gameOver || this.isPaused) return;
-        if (!this.isAirborne) return;
-
-        this.isAirborne = false;
-        this.tweens.killTweensOf(this.cat);
-        this.cat.y = 600;
     }
 
     // ============================================================
