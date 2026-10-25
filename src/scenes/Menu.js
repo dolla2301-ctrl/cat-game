@@ -70,7 +70,7 @@ export class Menu extends Phaser.Scene {
         this.previewHat.setScale(scale);
         this.previewHand.setScale(scale);
 
-        // --- КНОПКИ (НАСТРОЙКИ убраны) ---
+        // --- КНОПКИ ---
         this.createButton(640, 400, 'НАЧАТЬ ИГРУ', () => this.scene.start('Start'));
 
         // Кнопка «ДОНАТ АВТОРУ» — золотая
@@ -139,36 +139,37 @@ export class Menu extends Phaser.Scene {
         });
 
         // ============================================================
-        // БЛОК 2 (СПРАВА): ГРОМКОСТЬ — зеркально соцсетям
+        // БЛОК 2 (СПРАВА): ГРОМКОСТЬ (увеличено на 33%)
         // ============================================================
 
-        const rightBlockLeft = 1280 - blockLeft - totalW;   // 1010
-        const rightBlockCenterX = rightBlockLeft + totalW / 2;   // 1095
+        const volBtnW = 40;
+        const volBtnH = 54;
+        const volGap = 7;
+        const volTotalW = volBtnW * 5 + volGap * 4;   // 228
 
-        // Плашка «Громкость:» — ровно по ширине блока (5 квадратиков)
-        const volBtnW = 30;   // ширина квадратика громкости
-        const volGap = 5;     // зазор между квадратиками
-        const volTotalW = volBtnW * 5 + volGap * 4;   // 170
+        const rightBlockLeft = 1280 - blockLeft - volTotalW;   // 952
+        const rightBlockCenterX = rightBlockLeft + volTotalW / 2;   // 1066
 
-        this.add.rectangle(rightBlockCenterX, 615, volTotalW, 36, 0x000000, 0.55);
+        // Плашка «Громкость:»
+        this.add.rectangle(rightBlockCenterX, 615, volTotalW, 40, 0x000000, 0.55);
         this.add.text(rightBlockCenterX, 615, 'Громкость:', {
-            fontSize: '22px', color: '#ffffff', fontFamily: 'Arial'
+            fontSize: '26px', color: '#ffffff', fontFamily: 'Arial'
         }).setOrigin(0.5);
 
-        // 5 квадратиков громкости (0% … 100%)
+        // 5 квадратиков громкости (цифры без %)
         this.volumeButtons = [];
         const volumeSteps = [0, 0.25, 0.5, 0.75, 1.0];
-        const volumeLabels = ['0%', '25%', '50%', '75%', '100%'];
+        const volumeLabels = ['0', '25', '50', '75', '100'];
 
         volumeSteps.forEach((step, i) => {
             const x = rightBlockLeft + i * (volBtnW + volGap) + volBtnW / 2;
             const y = 670;
 
-            const bg = this.add.rectangle(x, y, volBtnW, 40, 0x444444)
+            const bg = this.add.rectangle(x, y, volBtnW, volBtnH, 0x444444)
                 .setInteractive({ useHandCursor: true });
 
             const label = this.add.text(x, y, volumeLabels[i], {
-                fontSize: '14px', color: '#ffffff', fontFamily: 'Arial',
+                fontSize: '18px', color: '#ffffff', fontFamily: 'Arial',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
 
