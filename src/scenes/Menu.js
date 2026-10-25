@@ -14,23 +14,53 @@ export class Menu extends Phaser.Scene {
             this.load.image('hand' + i, `assets/hands/hand${i}.png`);
         }
         this.load.image('background', 'assets/space.png');
+
+        // --- МУЗЫКА (грузим и в меню, чтобы играла сразу) ---
+        this.load.audio('bgMusic', 'assets/music/Tetris.mp3');
     }
 
     create() {
+        // --- МУЗЫКА В МЕНЮ ---
+        this.musicVolume = parseFloat(localStorage.getItem('musicVolume') ?? '0.5');
+        this.musicVolume = Math.max(0, Math.min(1, this.musicVolume));
+
+        if (!this.sound.get('bgMusic') || !this.sound.get('bgMusic').isPlaying) {
+            if (!this.sound.get('bgMusic')) {
+                this.bgMusic = this.sound.add('bgMusic', {
+                    loop: true,
+                    volume: this.musicVolume
+                });
+            } else {
+                this.bgMusic = this.sound.get('bgMusic');
+                this.bgMusic.setVolume(this.musicVolume);
+            }
+            if (this.musicVolume > 0) this.bgMusic.play();
+        } else {
+            this.bgMusic = this.sound.get('bgMusic');
+            this.bgMusic.setVolume(this.musicVolume);
+        }
+
+        // Разблокировка звука на iOS/Safari
+        this.input.once('pointerdown', () => {
+            if (this.bgMusic && !this.bgMusic.isPlaying && this.musicVolume > 0) {
+                this.bgMusic.play();
+            }
+        });
+
         // Фон
         this.add.image(640, 360, 'background').setDisplaySize(1280, 720);
 
         // Заголовок
-        this.add.text(640, 60, 'Добрячки', {
+        this.add.text(640, 60, 'МОЯ ИГРА', {
             fontSize: '56px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
         }).setOrigin(0.5);
 
         // --- КОТ В МЕНЮ ---
         let equipped = this.registry.get('equipped') || { jacket: 'jacket1', hat: 'hat1', hand: 'hand1' };
 
-        this.previewBody = this.add.image(700, 260, equipped.jacket).setDepth(0);
-        this.previewHat  = this.add.image(700, 260, equipped.hat).setDepth(1);
-        this.previewHand = this.add.image(700, 260, equipped.hand).setDepth(2);
+        this.previewBody = this.add.image(640, 260, equipped.jacket).setDepth(0);
+        this.previewHat  = this.add.image(640, 260, equipped.hat).setDepth(1);
+        this.previewHand = this.add.image(640, 260, equipped.hand).setDepth(2);
 
         const scale = 1.3;
         this.previewBody.setScale(scale);
@@ -40,7 +70,7 @@ export class Menu extends Phaser.Scene {
         // --- КНОПКИ ---
         this.createButton(640, 440, 'НАЧАТЬ ИГРУ', () => this.scene.start('Start'));
         this.createButton(640, 510, 'КАСТОМИЗАЦИЯ', () => this.scene.start('Wardrobe'));
-        this.createButton(640, 580, 'УПРАВЛЕНИЕ', () => this.scene.start('Settings'));
+        this.createButton(640, 580, 'НАСТРОЙКИ', () => this.scene.start('Settings'));
         this.createButton(640, 650, 'СЧЁТ', () => this.scene.start('Scores'));
     }
 
