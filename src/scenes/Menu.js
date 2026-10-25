@@ -15,6 +15,9 @@ export class Menu extends Phaser.Scene {
         }
         this.load.image('background', 'assets/space.png');
 
+        // --- АВАТАРКА ---
+        this.load.image('ava', 'assets/ava.png');
+
         // --- МУЗЫКА ---
         this.load.audio('bgMusic', 'assets/music/tetris.mp3');
     }
@@ -87,18 +90,18 @@ export class Menu extends Phaser.Scene {
         this.createButton(640, 640, 'СЧЁТ', () => this.scene.start('Scores'));
 
         // ============================================================
-        // СОЦСЕТИ (слева, на уровне кнопки «СЧЁТ»)
-        // Все элементы — прямоугольники фиксированного размера,
-        // поэтому края плашки и квадратов совпадают ТОЧНО.
+        // СОЦСЕТИ + АВАТАРКА (слева, на уровне кнопки «СЧЁТ»)
         // ============================================================
 
-        // Размеры
-        const btnW = 80;     // ширина квадратика
-        const btnH = 60;     // высота квадратика
-        const gap = 10;      // зазор между ВК и TG
-        const totalW = btnW * 2 + gap;   // 170 — общая ширина блока
-        const blockLeft = 100;           // левый край блока
+        const btnW = 80;
+        const btnH = 60;
+        const gap = 10;
+        const totalW = btnW * 2 + gap;   // 170
+        const blockLeft = 100;
         const blockCenterX = blockLeft + totalW / 2;  // 185
+
+        // Аватарка над соцсетями — на 30% больше (80 × 1.3 = 104)
+        this.add.image(blockCenterX, 535, 'ava').setDisplaySize(104, 104);
 
         // Плашка «Соц сети:» — ровно по ширине блока
         this.add.rectangle(blockCenterX, 615, totalW, 36, 0x000000, 0.55);
@@ -107,7 +110,7 @@ export class Menu extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // --- ВК ---
-        const vkX = blockLeft + btnW / 2;   // 140
+        const vkX = blockLeft + btnW / 2;
         const vkY = 670;
         const vkBg = this.add.rectangle(vkX, vkY, btnW, btnH, 0x3a6ea5)
             .setInteractive({ useHandCursor: true });
@@ -122,7 +125,7 @@ export class Menu extends Phaser.Scene {
         });
 
         // --- TG ---
-        const tgX = blockLeft + btnW + gap + btnW / 2;   // 230
+        const tgX = blockLeft + btnW + gap + btnW / 2;
         const tgY = 670;
         const tgBg = this.add.rectangle(tgX, tgY, btnW, btnH, 0x3a6ea5)
             .setInteractive({ useHandCursor: true });
