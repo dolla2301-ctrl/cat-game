@@ -7,7 +7,7 @@ export class Scores extends Phaser.Scene {
         for (let i = 1; i <= 4; i++) {
             this.load.image('jacket' + i, `assets/jackets/jacket${i}.png`);
         }
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 1; i <= 11; i++) {
             this.load.image('hat' + i, `assets/hats/hat${i}.png`);
         }
         for (let i = 1; i <= 10; i++) {
@@ -19,12 +19,11 @@ export class Scores extends Phaser.Scene {
     create() {
         this.add.image(640, 360, 'background').setDisplaySize(1280, 720);
 
-        this.add.text(640, 60, 'РЕКОРДЫ', {
-            fontSize: '64px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
+        this.add.text(640, 50, 'РЕКОРДЫ', {
+            fontSize: '56px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
         }).setOrigin(0.5);
 
         this.recordsLayer = this.add.container(0, 0);
-
         this.drawTable();
 
         const backBtn = this.add.text(640, 680, 'НАЗАД', {
@@ -53,39 +52,39 @@ export class Scores extends Phaser.Scene {
             return;
         }
 
-        const startY = 150;
-        const rowHeight = 80;
-        const maxRows = 6;
+        const startY = 130;
+        const rowHeight = 120;
+        const maxRows = 4;
         const visible = records.slice(0, maxRows);
 
         visible.forEach((rec, index) => {
             const y = startY + index * rowHeight;
 
-            const rowBg = this.add.rectangle(640, y, 1000, 70, 0x222222, 0.8)
+            const rowBg = this.add.rectangle(640, y, 1000, 110, 0x222222, 0.8)
                 .setStrokeStyle(2, index === 0 ? 0xffcc00 : 0x444444);
             this.recordsLayer.add(rowBg);
 
             const place = this.add.text(180, y, (index + 1) + '.', {
-                fontSize: '32px', color: index === 0 ? '#ffcc00' : '#ffffff',
+                fontSize: '36px', color: index === 0 ? '#ffcc00' : '#ffffff',
                 fontFamily: 'Arial', fontStyle: 'bold'
             }).setOrigin(0.5);
             this.recordsLayer.add(place);
 
             const equipped = rec.equipped || { jacket: 'jacket1', hat: 'hat1', hand: 'hand1' };
-            this.addAvatar(260, y, equipped);
+            this.addAvatar(280, y, equipped);
 
-            const nameText = this.add.text(360, y, rec.name || 'Без имени', {
-                fontSize: '28px', color: '#ffffff', fontFamily: 'Arial'
+            const nameText = this.add.text(400, y, rec.name || 'Без имени', {
+                fontSize: '30px', color: '#ffffff', fontFamily: 'Arial'
             }).setOrigin(0, 0.5);
             this.recordsLayer.add(nameText);
 
-            const scoreText = this.add.text(1050, y, String(rec.score), {
-                fontSize: '36px', color: '#88ff88', fontFamily: 'Arial', fontStyle: 'bold'
+            const scoreText = this.add.text(1040, y, String(rec.score), {
+                fontSize: '40px', color: '#88ff88', fontFamily: 'Arial', fontStyle: 'bold'
             }).setOrigin(1, 0.5);
             this.recordsLayer.add(scoreText);
 
             const realIndex = records.indexOf(rec);
-            const cross = this.add.text(1110, y, '✕', {
+            const cross = this.add.text(1100, y, '✕', {
                 fontSize: '36px', color: '#ff6666', fontFamily: 'Arial', fontStyle: 'bold'
             }).setOrigin(0.5).setInteractive({ useHandCursor: true });
             cross.on('pointerover', () => cross.setColor('#ff2222').setScale(1.2));
@@ -95,7 +94,7 @@ export class Scores extends Phaser.Scene {
         });
 
         if (records.length > maxRows) {
-            const hint = this.add.text(640, 660, `Показаны топ-${maxRows} из ${records.length}`, {
+            const hint = this.add.text(640, 640, `Показаны топ-${maxRows} из ${records.length}`, {
                 fontSize: '20px', color: '#aaaaaa', fontFamily: 'Arial'
             }).setOrigin(0.5);
             this.recordsLayer.add(hint);
