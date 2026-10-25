@@ -96,13 +96,14 @@ export class Start extends Phaser.Scene {
             this.input.on('pointerdown', (pointer) => {
                 if (this.gameOver || this.isPaused) return;
 
-                // Тап в верхнюю треть — прыжок вверх
+                // Игнорируем тап по кнопке паузы (она в правом верхнем углу)
+                if (pointer.x > 1180 && pointer.y < 80) return;
+
                 if (pointer.y < 240) {
                     this.tryJumpUp();
                     return;
                 }
 
-                // Тап слева/справа — прыжок в сторону
                 if (pointer.x < 640) this.tryJump(-108);
                 else this.tryJump(108);
             });
@@ -113,6 +114,22 @@ export class Start extends Phaser.Scene {
             if (this.gameOver) return;
             if (this.isPaused) this.resumeGame();
             else this.openPauseMenu();
+        });
+
+        // --- КНОПКА ПАУЗЫ (правый верхний угол, для сенсора/мыши) ---
+        this.pauseBtn = this.add.text(1240, 20, 'МЕНЮ', {
+            fontSize: '36px', color: '#ffcc00', backgroundColor: '#00000088',
+            padding: { x: 14, y: 6 }
+        })
+        .setOrigin(1, 0)
+        .setDepth(10)
+        .setInteractive({ useHandCursor: true });
+
+        this.pauseBtn.on('pointerover', () => this.pauseBtn.setBackgroundColor('#444444'));
+        this.pauseBtn.on('pointerout', () => this.pauseBtn.setBackgroundColor('#00000088'));
+        this.pauseBtn.on('pointerdown', () => {
+            if (this.gameOver || this.isPaused) return;
+            this.openPauseMenu();
         });
     }
 
@@ -417,7 +434,6 @@ export class Start extends Phaser.Scene {
     update() {
         if (this.gameOver || this.isPaused) return;
 
-        // Спавн
         this.spawnAccumulator += this.game.loop.delta;
         const interval = this.getSpawnInterval();
         while (this.spawnAccumulator >= interval) {
@@ -425,7 +441,6 @@ export class Start extends Phaser.Scene {
             this.spawnEnemy();
         }
 
-        // Коллизии
         this.enemies.getChildren().forEach(enemy => {
             const dist = Phaser.Math.Distance.Between(
                 this.cat.x, this.cat.y, enemy.x, enemy.y
