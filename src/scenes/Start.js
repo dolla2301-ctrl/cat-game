@@ -24,7 +24,7 @@ export class Start extends Phaser.Scene {
         this.load.image('money', 'assets/balls/money.png');
         this.load.image('bomb', 'assets/balls/bomb.png');
 
-        this.load.audio('bgMusic', 'assets/music/Tetris.mp3');
+        this.load.audio('bgMusic', 'assets/music/tetris.mp3');
         this.load.audio('coinSound', 'assets/music/money.mp3');
         this.load.audio('hitSound', 'assets/music/hit.mp3');
     }
@@ -410,7 +410,6 @@ export class Start extends Phaser.Scene {
             }
         }
 
-        // Обновляем громкость звуков монеты и удара
         if (this.coinSound) this.coinSound.setVolume(step);
         if (this.hitSound) this.hitSound.setVolume(step);
 
@@ -560,7 +559,7 @@ export class Start extends Phaser.Scene {
     }
 
     // ============================================================
-    // UPDATE (звуки монеты и удара, тряска при уроне)
+    // UPDATE
     // ============================================================
     update() {
         if (this.gameOver || this.isPaused) return;
@@ -579,12 +578,10 @@ export class Start extends Phaser.Scene {
 
             if (dist < 70) {
                 if (enemy.getData('isRed')) {
-                    // УРОН
                     this.lives--;
                     this.updateHealthIcon();
                     this.cameras.main.shake(300, 0.005);
 
-                    // Звук удара — перезапуск с начала
                     if (this.hitSound) {
                         this.hitSound.stop();
                         this.hitSound.setVolume(this.musicVolume);
@@ -593,10 +590,8 @@ export class Start extends Phaser.Scene {
 
                     this.checkGameOver();
                 } else {
-                    // МОНЕТА
                     this.addScore(1);
 
-                    // Звук монеты — перезапуск с начала
                     if (this.coinSound) {
                         this.coinSound.stop();
                         this.coinSound.setVolume(this.musicVolume);
