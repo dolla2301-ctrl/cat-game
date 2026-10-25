@@ -51,7 +51,7 @@ export class Menu extends Phaser.Scene {
         this.add.image(640, 360, 'background').setDisplaySize(1280, 720);
 
         // Заголовок
-        this.add.text(640, 60, 'МОЯ ИГРА', {
+        this.add.text(640, 60, 'Добрячки', {
             fontSize: '56px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
         }).setOrigin(0.5);
 
