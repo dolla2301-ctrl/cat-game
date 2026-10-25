@@ -70,7 +70,7 @@ export class Menu extends Phaser.Scene {
         this.previewHat.setScale(scale);
         this.previewHand.setScale(scale);
 
-        // --- КНОПКИ ---
+        // --- КНОПКИ (НАСТРОЙКИ убраны) ---
         this.createButton(640, 400, 'НАЧАТЬ ИГРУ', () => this.scene.start('Start'));
 
         // Кнопка «ДОНАТ АВТОРУ» — золотая
@@ -85,12 +85,11 @@ export class Menu extends Phaser.Scene {
             window.location.href = 'https://www.donationalerts.com/r/donutdobrychki';
         });
 
-        this.createButton(640, 520, 'НАСТРОЙКИ', () => this.scene.start('Settings'));
-        this.createButton(640, 580, 'ОДЕЖДА', () => this.scene.start('Wardrobe'));
-        this.createButton(640, 640, 'СЧЁТ', () => this.scene.start('Scores'));
+        this.createButton(640, 520, 'ОДЕЖДА', () => this.scene.start('Wardrobe'));
+        this.createButton(640, 580, 'СЧЁТ', () => this.scene.start('Scores'));
 
         // ============================================================
-        // СОЦСЕТИ + АВАТАРКА (слева, на уровне кнопки «СЧЁТ»)
+        // БЛОК 1 (СЛЕВА): АВАТАРКА + СОЦСЕТИ
         // ============================================================
 
         const btnW = 80;
@@ -100,10 +99,10 @@ export class Menu extends Phaser.Scene {
         const blockLeft = 100;
         const blockCenterX = blockLeft + totalW / 2;  // 185
 
-        // Аватарка над соцсетями — на 30% больше (80 × 1.3 = 104)
+        // Аватарка над соцсетями
         this.add.image(blockCenterX, 535, 'ava').setDisplaySize(104, 104);
 
-        // Плашка «Соц сети:» — ровно по ширине блока
+        // Плашка «Соц сети:»
         this.add.rectangle(blockCenterX, 615, totalW, 36, 0x000000, 0.55);
         this.add.text(blockCenterX, 615, 'Соц сети:', {
             fontSize: '22px', color: '#ffffff', fontFamily: 'Arial'
@@ -137,6 +136,83 @@ export class Menu extends Phaser.Scene {
         tgBg.on('pointerout', () => tgBg.setFillStyle(0x3a6ea5));
         tgBg.on('pointerup', () => {
             window.location.href = 'https://t.me/m4a34';
+        });
+
+        // ============================================================
+        // БЛОК 2 (СПРАВА): ГРОМКОСТЬ — зеркально соцсетям
+        // ============================================================
+
+        const rightBlockLeft = 1280 - blockLeft - totalW;   // 1010
+        const rightBlockCenterX = rightBlockLeft + totalW / 2;   // 1095
+
+        // Плашка «Громкость:» — ровно по ширине блока (5 квадратиков)
+        const volBtnW = 30;   // ширина квадратика громкости
+        const volGap = 5;     // зазор между квадратиками
+        const volTotalW = volBtnW * 5 + volGap * 4;   // 170
+
+        this.add.rectangle(rightBlockCenterX, 615, volTotalW, 36, 0x000000, 0.55);
+        this.add.text(rightBlockCenterX, 615, 'Громкость:', {
+            fontSize: '22px', color: '#ffffff', fontFamily: 'Arial'
+        }).setOrigin(0.5);
+
+        // 5 квадратиков громкости (0% … 100%)
+        this.volumeButtons = [];
+        const volumeSteps = [0, 0.25, 0.5, 0.75, 1.0];
+        const volumeLabels = ['0%', '25%', '50%', '75%', '100%'];
+
+        volumeSteps.forEach((step, i) => {
+            const x = rightBlockLeft + i * (volBtnW + volGap) + volBtnW / 2;
+            const y = 670;
+
+            const bg = this.add.rectangle(x, y, volBtnW, 40, 0x444444)
+                .setInteractive({ useHandCursor: true });
+
+            const label = this.add.text(x, y, volumeLabels[i], {
+                fontSize: '14px', color: '#ffffff', fontFamily: 'Arial',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+
+            bg.on('pointerover', () => {
+                if (Math.abs(this.musicVolume - step) > 0.01) bg.setFillStyle(0x666666);
+            });
+            bg.on('pointerout', () => {
+                if (Math.abs(this.musicVolume - step) > 0.01) bg.setFillStyle(0x444444);
+            });
+            bg.on('pointerdown', () => this.setMenuVolume(step));
+
+            this.volumeButtons.push({ bg, label, step });
+        });
+
+        this.highlightMenuVolume();
+    }
+
+    // ============================================================
+    // ГРОМКОСТЬ В МЕНЮ
+    // ============================================================
+    setMenuVolume(step) {
+        this.musicVolume = step;
+        localStorage.setItem('musicVolume', String(step));
+
+        if (this.bgMusic) {
+            if (step > 0) {
+                if (!this.bgMusic.isPlaying) this.bgMusic.play();
+                this.bgMusic.setVolume(step);
+            } else {
+                if (this.bgMusic.isPlaying) this.bgMusic.pause();
+                this.bgMusic.setVolume(0);
+            }
+        }
+
+        this.highlightMenuVolume();
+    }
+
+    highlightMenuVolume() {
+        this.volumeButtons.forEach(v => {
+            if (Math.abs(v.step - this.musicVolume) < 0.01) {
+                v.bg.setFillStyle(0x44aa44);
+            } else {
+                v.bg.setFillStyle(0x444444);
+            }
         });
     }
 
