@@ -36,6 +36,9 @@ export class Start extends Phaser.Scene {
         this.lives = 3;
         this.score = 0;
 
+        // 11 позиций спавна
+        this.spawnPositions = [52, 160, 268, 376, 484, 592, 700, 808, 916, 1024, 1132];
+
         const equipped = this.registry.get('equipped') || {
             jacket: 'jacket1', hat: 'hat1', hand: 'hand1'
         };
@@ -144,13 +147,11 @@ export class Start extends Phaser.Scene {
     }
 
     // ============================================================
-    // ПРИВЯЗКА УПРАВЛЕНИЯ (только влево/вправо, без вверх и пробела)
+    // ПРИВЯЗКА УПРАВЛЕНИЯ
     // ============================================================
     bindControls() {
         this.input.keyboard.off('keydown-LEFT');
         this.input.keyboard.off('keydown-RIGHT');
-        this.input.keyboard.off('keydown-UP');
-        this.input.keyboard.off('keydown-DOWN');
         this.input.off('pointerdown');
 
         if (this.controlMode === 'keyboard') {
@@ -201,14 +202,14 @@ export class Start extends Phaser.Scene {
     }
 
     // ============================================================
-    // СКОРОСТЬ ПАДЕНИЯ ШАРОВ (замедлено на 50%)
+    // СКОРОСТЬ ПАДЕНИЯ ШАРОВ
     // ============================================================
     getBallSpeedFactor() {
         return Math.max(0.25, 1 - this.score * 0.01);
     }
 
     // ============================================================
-    // ИНТЕРВАЛ СПАВНА (замедлено на 50%)
+    // ИНТЕРВАЛ СПАВНА
     // ============================================================
     getSpawnInterval() {
         const multiplier = Math.pow(2, Math.floor(this.score / 20));
@@ -216,12 +217,12 @@ export class Start extends Phaser.Scene {
     }
 
     // ============================================================
-    // СПАВН ШАРА
+    // СПАВН ШАРА (11 фиксированных позиций)
     // ============================================================
     spawnEnemy() {
         if (this.gameOver || this.isPaused) return;
 
-        const x = Phaser.Math.Between(50, 1230);
+        const x = Phaser.Utils.Array.GetRandom(this.spawnPositions);
         const isRed = Phaser.Math.Between(0, 99) < 30;
 
         let ballKey;
@@ -514,7 +515,7 @@ export class Start extends Phaser.Scene {
     }
 
     // ============================================================
-    // UPDATE
+    // UPDATE (хитбокс 65 для всех шаров)
     // ============================================================
     update() {
         if (this.gameOver || this.isPaused) return;
@@ -531,7 +532,7 @@ export class Start extends Phaser.Scene {
                 this.cat.x, this.cat.y, enemy.x, enemy.y
             );
 
-            if (dist < 70) {
+            if (dist < 65) {
                 if (enemy.getData('isRed')) {
                     this.lives--;
                     this.updateHealthIcon();
