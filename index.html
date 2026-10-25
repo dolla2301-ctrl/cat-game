@@ -30,7 +30,7 @@
         #game-container {
             width: 100vw;
             height: 100vh;
-            height: 100dvh; /* Для современных iOS — учитывает панели Safari */
+            height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -60,10 +60,23 @@
             text-decoration: none;
             color: inherit;
         }
+
+        /* Счётчик скрыт от игроков, но работает */
+        .hidden-counter {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div id="game-container"></div>
+
+    <!-- Счётчик посещений: считает всех, но НЕ виден на странице -->
+    <div class="hidden-counter">
+        <a href="https://hits.sh/dolla2301-ctrl.github.io/cat-game/">
+            <img alt="Hits" src="https://hits.sh/dolla2301-ctrl.github.io/cat-game.svg"/>
+        </a>
+    </div>
+
     <script src="./phaser.js"></script>
     <script type="module" src="./src/main.js"></script>
 </body>
