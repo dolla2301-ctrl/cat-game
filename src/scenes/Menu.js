@@ -16,7 +16,7 @@ export class Menu extends Phaser.Scene {
         this.load.image('background', 'assets/space.png');
 
         // --- МУЗЫКА (грузим и в меню, чтобы играла сразу) ---
-        this.load.audio('bgMusic', 'assets/music/Tetris.mp3');
+        this.load.audio('bgMusic', 'assets/music/tetris.mp3');
     }
 
     create() {
