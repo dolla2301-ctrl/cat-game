@@ -5,11 +5,12 @@ export class Start extends Phaser.Scene {
 
     preload() {
         this.load.image('background', 'assets/space.png');
+        this.load.image('space2', 'assets/space2.png');
 
         for (let i = 1; i <= 4; i++) {
             this.load.image('jacket' + i, `assets/jackets/jacket${i}.png`);
         }
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 1; i <= 11; i++) {
             this.load.image('hat' + i, `assets/hats/hat${i}.png`);
         }
         for (let i = 1; i <= 10; i++) {
@@ -25,6 +26,7 @@ export class Start extends Phaser.Scene {
         this.load.image('bomb', 'assets/balls/bomb.png');
 
         this.load.audio('bgMusic', 'assets/music/tetris.mp3');
+        this.load.audio('bgMusic2', 'assets/music/tetris2.mp3');
         this.load.audio('coinSound', 'assets/music/money.mp3');
         this.load.audio('hitSound', 'assets/music/hit.mp3');
     }
@@ -36,16 +38,49 @@ export class Start extends Phaser.Scene {
         this.lives = 3;
         this.score = 0;
 
-        // 11 позиций спавна
         this.spawnPositions = [52, 160, 268, 376, 484, 592, 700, 808, 916, 1024, 1132];
 
         const equipped = this.registry.get('equipped') || {
             jacket: 'jacket1', hat: 'hat1', hand: 'hand1'
         };
 
-        this.add.image(640, 360, 'background').setDisplaySize(1280, 720);
+        // Выбираем фон: space2, если надета hat11, иначе space
+        const useSpace2 = this.registry.get('useSpace2')
+            ?? (localStorage.getItem('useSpace2') === 'true');
+        const bgKey = (useSpace2 && this.textures.exists('space2')) ? 'space2' : 'background';
+        this.add.image(640, 360, bgKey).setDisplaySize(1280, 720);
 
-        // --- ЗАПАСНЫЕ ТЕКСТУРЫ ---
+        // --- МЕТЕЛЬ (только на фоне space2) ---
+        this.snowflakes = [];
+        if (bgKey === 'space2') {
+            if (!this.textures.exists('snowflake')) {
+                const g = this.make.graphics({ x: 0, y: 0, add: false });
+                g.fillStyle(0xffffff, 1);
+                g.fillCircle(4, 4, 4);
+                g.generateTexture('snowflake', 8, 8);
+                g.destroy();
+            }
+
+            for (let i = 0; i < 150; i++) {
+                const flake = this.add.image(
+                    Phaser.Math.Between(-100, 1280),
+                    Phaser.Math.Between(-100, 720),
+                    'snowflake'
+                )
+                .setDepth(1)
+                .setAlpha(Phaser.Math.FloatBetween(0.3, 0.9))
+                .setScale(Phaser.Math.FloatBetween(0.5, 1.8));
+
+                flake.fallSpeed = Phaser.Math.FloatBetween(150, 350);
+                flake.windSpeed = Phaser.Math.FloatBetween(80, 200);
+                flake.swaySpeed = Phaser.Math.FloatBetween(2, 4);
+                flake.swayAmount = Phaser.Math.FloatBetween(5, 15);
+                flake.time = Phaser.Math.FloatBetween(0, Math.PI * 2);
+
+                this.snowflakes.push(flake);
+            }
+        }
+
         if (!this.textures.exists('ball_red')) {
             const g = this.make.graphics({ x: 0, y: 0, add: false });
             g.fillStyle(0xff4444, 1);
@@ -80,29 +115,38 @@ export class Start extends Phaser.Scene {
         this.enemies = this.add.group();
         this.spawnAccumulator = 0;
 
-        // --- МУЗЫКА ---
+        // --- МУЗЫКА (tetris2 при hat11, иначе tetris) ---
         this.musicVolume = parseFloat(localStorage.getItem('musicVolume') ?? '0.5');
         this.musicVolume = Math.max(0, Math.min(1, this.musicVolume));
 
-        if (!this.sound.get('bgMusic') || !this.sound.get('bgMusic').isPlaying) {
-            this.bgMusic = this.sound.add('bgMusic', {
+        const musicKey = useSpace2 ? 'bgMusic2' : 'bgMusic';
+
+        // Останавливаем другую музыку, если играет (из меню)
+        if (this.sound.get('bgMusic') && this.sound.get('bgMusic').isPlaying && musicKey !== 'bgMusic') {
+            this.sound.get('bgMusic').stop();
+        }
+        if (this.sound.get('bgMusic2') && this.sound.get('bgMusic2').isPlaying && musicKey !== 'bgMusic2') {
+            this.sound.get('bgMusic2').stop();
+        }
+
+        if (!this.sound.get(musicKey) || !this.sound.get(musicKey).isPlaying) {
+            this.bgMusic = this.sound.add(musicKey, {
                 loop: true,
                 volume: this.musicVolume
             });
             if (this.musicVolume > 0) this.bgMusic.play();
         } else {
-            this.bgMusic = this.sound.get('bgMusic');
+            this.bgMusic = this.sound.get(musicKey);
             this.bgMusic.setVolume(this.musicVolume);
         }
 
-        // --- ЗВУК МОНЕТЫ ---
+        // --- ЗВУКИ ---
         if (!this.sound.get('coinSound')) {
             this.coinSound = this.sound.add('coinSound', { volume: this.musicVolume });
         } else {
             this.coinSound = this.sound.get('coinSound');
         }
 
-        // --- ЗВУК УДАРА ---
         if (!this.sound.get('hitSound')) {
             this.hitSound = this.sound.add('hitSound', { volume: this.musicVolume });
         } else {
@@ -115,21 +159,18 @@ export class Start extends Phaser.Scene {
             }
         });
 
-        // --- РЕЖИМ УПРАВЛЕНИЯ ---
         this.controlMode = this.registry.get('controlMode')
             || localStorage.getItem('controlMode')
             || 'mouse';
 
         this.bindControls();
 
-        // --- ESC = ПАУЗА ---
         this.input.keyboard.on('keydown-ESC', () => {
             if (this.gameOver) return;
             if (this.isPaused) this.resumeGame();
             else this.openPauseMenu();
         });
 
-        // --- КНОПКА «МЕНЮ» ---
         this.pauseBtn = this.add.text(1240, 20, 'МЕНЮ', {
             fontSize: '36px', color: '#ffcc00', backgroundColor: '#00000088',
             padding: { x: 18, y: 8 }
@@ -146,9 +187,6 @@ export class Start extends Phaser.Scene {
         });
     }
 
-    // ============================================================
-    // ПРИВЯЗКА УПРАВЛЕНИЯ
-    // ============================================================
     bindControls() {
         this.input.keyboard.off('keydown-LEFT');
         this.input.keyboard.off('keydown-RIGHT');
@@ -168,9 +206,6 @@ export class Start extends Phaser.Scene {
         }
     }
 
-    // ============================================================
-    // ПРЫЖОК ВБОК
-    // ============================================================
     tryJump(distanceX) {
         if (this.gameOver || this.isPaused) return;
         if (this.isJumping) return;
@@ -201,24 +236,15 @@ export class Start extends Phaser.Scene {
         });
     }
 
-    // ============================================================
-    // СКОРОСТЬ ПАДЕНИЯ ШАРОВ
-    // ============================================================
     getBallSpeedFactor() {
         return Math.max(0.25, 1 - this.score * 0.01);
     }
 
-    // ============================================================
-    // ИНТЕРВАЛ СПАВНА
-    // ============================================================
     getSpawnInterval() {
         const multiplier = Math.pow(2, Math.floor(this.score / 20));
         return Math.max(40, 600 / multiplier);
     }
 
-    // ============================================================
-    // СПАВН ШАРА (11 фиксированных позиций)
-    // ============================================================
     spawnEnemy() {
         if (this.gameOver || this.isPaused) return;
 
@@ -251,24 +277,15 @@ export class Start extends Phaser.Scene {
         });
     }
 
-    // ============================================================
-    // ОЧКИ
-    // ============================================================
     addScore(amount) {
         this.score += amount;
         this.scoreText.setText('Очки: ' + this.score);
     }
 
-    // ============================================================
-    // ИКОНКА ЖИЗНЕЙ
-    // ============================================================
     updateHealthIcon() {
         this.healthIcon.setTexture('health' + (4 - this.lives));
     }
 
-    // ============================================================
-    // ПАУЗА
-    // ============================================================
     openPauseMenu() {
         if (this.isPaused) return;
         this.isPaused = true;
@@ -403,9 +420,6 @@ export class Start extends Phaser.Scene {
         }
     }
 
-    // ============================================================
-    // КОНЕЦ ИГРЫ
-    // ============================================================
     checkGameOver() {
         if (this.lives > 0 || this.gameOver) return;
         this.gameOver = true;
@@ -514,11 +528,27 @@ export class Start extends Phaser.Scene {
         localStorage.setItem(KEY, JSON.stringify(records.slice(0, 50)));
     }
 
-    // ============================================================
-    // UPDATE (хитбокс 65 для всех шаров)
-    // ============================================================
     update() {
         if (this.gameOver || this.isPaused) return;
+
+        // --- МЕТЕЛЬ ---
+        if (this.snowflakes && this.snowflakes.length > 0) {
+            const delta = this.game.loop.delta / 1000;
+
+            this.snowflakes.forEach(flake => {
+                flake.y += flake.fallSpeed * delta;
+                flake.x += flake.windSpeed * delta;
+
+                flake.time += flake.swaySpeed * delta;
+                flake.y += Math.sin(flake.time) * flake.swayAmount * delta;
+
+                if (flake.y > 740 || flake.x > 1300) {
+                    flake.y = Phaser.Math.Between(-100, -20);
+                    flake.x = Phaser.Math.Between(-100, 200);
+                    flake.alpha = Phaser.Math.FloatBetween(0.3, 0.9);
+                }
+            });
+        }
 
         this.spawnAccumulator += this.game.loop.delta;
         const interval = this.getSpawnInterval();
