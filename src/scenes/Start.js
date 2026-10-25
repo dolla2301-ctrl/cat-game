@@ -129,8 +129,8 @@ export class Start extends Phaser.Scene {
 
         // --- КНОПКА «МЕНЮ» ---
         this.pauseBtn = this.add.text(1240, 20, 'МЕНЮ', {
-            fontSize: '28px', color: '#ffcc00', backgroundColor: '#00000088',
-            padding: { x: 14, y: 6 }
+            fontSize: '36px', color: '#ffcc00', backgroundColor: '#00000088',
+            padding: { x: 18, y: 8 }
         })
         .setOrigin(1, 0)
         .setDepth(10)
