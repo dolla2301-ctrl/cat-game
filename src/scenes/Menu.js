@@ -15,7 +15,7 @@ export class Menu extends Phaser.Scene {
         }
         this.load.image('background', 'assets/space.png');
 
-        // --- МУЗЫКА (грузим и в меню, чтобы играла сразу) ---
+        // --- МУЗЫКА ---
         this.load.audio('bgMusic', 'assets/music/tetris.mp3');
     }
 
@@ -70,7 +70,7 @@ export class Menu extends Phaser.Scene {
         // --- КНОПКИ ---
         this.createButton(640, 400, 'НАЧАТЬ ИГРУ', () => this.scene.start('Start'));
 
-        // Кнопка «ДОНАТ АВТОРУ» — переход в текущей вкладке (для iOS)
+        // Кнопка «ДОНАТ АВТОРУ» — золотая
         const donateBtn = this.add.text(640, 460, 'ДОНАТ АВТОРУ', {
             fontSize: '28px', color: '#ffffff', backgroundColor: '#aa8800',
             padding: { x: 20, y: 10 }
@@ -85,6 +85,56 @@ export class Menu extends Phaser.Scene {
         this.createButton(640, 520, 'НАСТРОЙКИ', () => this.scene.start('Settings'));
         this.createButton(640, 580, 'ОДЕЖДА', () => this.scene.start('Wardrobe'));
         this.createButton(640, 640, 'СЧЁТ', () => this.scene.start('Scores'));
+
+        // ============================================================
+        // СОЦСЕТИ (слева, на уровне кнопки «СЧЁТ»)
+        // Все элементы — прямоугольники фиксированного размера,
+        // поэтому края плашки и квадратов совпадают ТОЧНО.
+        // ============================================================
+
+        // Размеры
+        const btnW = 80;     // ширина квадратика
+        const btnH = 60;     // высота квадратика
+        const gap = 10;      // зазор между ВК и TG
+        const totalW = btnW * 2 + gap;   // 170 — общая ширина блока
+        const blockLeft = 100;           // левый край блока
+        const blockCenterX = blockLeft + totalW / 2;  // 185
+
+        // Плашка «Соц сети:» — ровно по ширине блока
+        this.add.rectangle(blockCenterX, 615, totalW, 36, 0x000000, 0.55);
+        this.add.text(blockCenterX, 615, 'Соц сети:', {
+            fontSize: '22px', color: '#ffffff', fontFamily: 'Arial'
+        }).setOrigin(0.5);
+
+        // --- ВК ---
+        const vkX = blockLeft + btnW / 2;   // 140
+        const vkY = 670;
+        const vkBg = this.add.rectangle(vkX, vkY, btnW, btnH, 0x3a6ea5)
+            .setInteractive({ useHandCursor: true });
+        this.add.text(vkX, vkY, 'ВК', {
+            fontSize: '26px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        vkBg.on('pointerover', () => vkBg.setFillStyle(0x4a8ec5));
+        vkBg.on('pointerout', () => vkBg.setFillStyle(0x3a6ea5));
+        vkBg.on('pointerup', () => {
+            window.location.href = 'https://vk.ru/m4a34';
+        });
+
+        // --- TG ---
+        const tgX = blockLeft + btnW + gap + btnW / 2;   // 230
+        const tgY = 670;
+        const tgBg = this.add.rectangle(tgX, tgY, btnW, btnH, 0x3a6ea5)
+            .setInteractive({ useHandCursor: true });
+        this.add.text(tgX, tgY, 'TG', {
+            fontSize: '26px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        tgBg.on('pointerover', () => tgBg.setFillStyle(0x4a8ec5));
+        tgBg.on('pointerout', () => tgBg.setFillStyle(0x3a6ea5));
+        tgBg.on('pointerup', () => {
+            window.location.href = 'https://t.me/m4a34';
+        });
     }
 
     createButton(x, y, text, onClick) {
