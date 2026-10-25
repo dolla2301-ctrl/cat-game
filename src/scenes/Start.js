@@ -21,7 +21,12 @@ export class Start extends Phaser.Scene {
         this.load.image('health3', 'assets/healts/healts3.png');
         this.load.image('health4', 'assets/healts/healts4.png');
 
+        this.load.image('money', 'assets/balls/money.png');
+        this.load.image('bomb', 'assets/balls/bomb.png');
+
         this.load.audio('bgMusic', 'assets/music/Tetris.mp3');
+        this.load.audio('coinSound', 'assets/music/money.mp3');
+        this.load.audio('hitSound', 'assets/music/hit.mp3');
     }
 
     create() {
@@ -38,6 +43,7 @@ export class Start extends Phaser.Scene {
 
         this.add.image(640, 360, 'background').setDisplaySize(1280, 720);
 
+        // --- ЗАПАСНЫЕ ТЕКСТУРЫ ---
         if (!this.textures.exists('ball_red')) {
             const g = this.make.graphics({ x: 0, y: 0, add: false });
             g.fillStyle(0xff4444, 1);
@@ -85,6 +91,20 @@ export class Start extends Phaser.Scene {
         } else {
             this.bgMusic = this.sound.get('bgMusic');
             this.bgMusic.setVolume(this.musicVolume);
+        }
+
+        // --- ЗВУК МОНЕТЫ ---
+        if (!this.sound.get('coinSound')) {
+            this.coinSound = this.sound.add('coinSound', { volume: this.musicVolume });
+        } else {
+            this.coinSound = this.sound.get('coinSound');
+        }
+
+        // --- ЗВУК УДАРА ---
+        if (!this.sound.get('hitSound')) {
+            this.hitSound = this.sound.add('hitSound', { volume: this.musicVolume });
+        } else {
+            this.hitSound = this.sound.get('hitSound');
         }
 
         this.input.once('pointerdown', () => {
@@ -248,9 +268,20 @@ export class Start extends Phaser.Scene {
 
         const x = Phaser.Math.Between(50, 1230);
         const isRed = Phaser.Math.Between(0, 99) < 30;
-        const ballKey = isRed ? 'ball_red' : 'ball_green';
+
+        let ballKey;
+        if (isRed) {
+            ballKey = this.textures.exists('bomb') ? 'bomb' : 'ball_red';
+        } else {
+            ballKey = this.textures.exists('money') ? 'money' : 'ball_green';
+        }
 
         const enemy = this.add.sprite(x, -50, ballKey);
+
+        if (ballKey === 'bomb' || ballKey === 'money') {
+            enemy.setDisplaySize(120, 120);
+        }
+
         enemy.setData('isRed', isRed);
         this.enemies.add(enemy);
 
@@ -296,12 +327,10 @@ export class Start extends Phaser.Scene {
             fontSize: '72px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        // --- ПОДПИСЬ ГРОМКОСТИ ---
         const volLabel = this.add.text(640, 220, 'ГРОМКОСТЬ МУЗЫКИ:', {
             fontSize: '28px', color: '#dddddd', fontFamily: 'Arial'
         }).setOrigin(0.5);
 
-        // --- 5 КВАДРАТИКОВ ГРОМКОСТИ (0%, 25%, 50%, 75%, 100%) ---
         this.volumeButtons = [];
         const volumeSteps = [0, 0.25, 0.5, 0.75, 1.0];
         const volumeLabels = ['0%', '25%', '50%', '75%', '100%'];
@@ -319,21 +348,16 @@ export class Start extends Phaser.Scene {
             }).setOrigin(0.5);
 
             bg.on('pointerover', () => {
-                if (Math.abs(this.musicVolume - step) > 0.01) {
-                    bg.setFillStyle(0x666666);
-                }
+                if (Math.abs(this.musicVolume - step) > 0.01) bg.setFillStyle(0x666666);
             });
             bg.on('pointerout', () => {
-                if (Math.abs(this.musicVolume - step) > 0.01) {
-                    bg.setFillStyle(0x444444);
-                }
+                if (Math.abs(this.musicVolume - step) > 0.01) bg.setFillStyle(0x444444);
             });
             bg.on('pointerdown', () => this.setVolume(step));
 
             this.volumeButtons.push({ bg, label, step });
         });
 
-        // --- КНОПКА УПРАВЛЕНИЯ ---
         this.controlBtn = this.add.text(640, 370, this.controlMode === 'keyboard' ? 'УПРАВЛЕНИЕ: КЛАВИАТУРА' : 'УПРАВЛЕНИЕ: МЫШЬ', {
             fontSize: '32px', color: '#ffffff', backgroundColor: '#444444',
             padding: { x: 25, y: 10 }
@@ -343,7 +367,6 @@ export class Start extends Phaser.Scene {
         this.controlBtn.on('pointerout', () => this.controlBtn.setBackgroundColor('#444444'));
         this.controlBtn.on('pointerdown', () => this.toggleControl());
 
-        // --- ПРОДОЛЖИТЬ ---
         const resumeBtn = this.add.text(640, 460, 'ПРОДОЛЖИТЬ', {
             fontSize: '40px', color: '#ffffff', backgroundColor: '#44aa44',
             padding: { x: 30, y: 12 }
@@ -353,7 +376,6 @@ export class Start extends Phaser.Scene {
         resumeBtn.on('pointerout', () => resumeBtn.setBackgroundColor('#44aa44'));
         resumeBtn.on('pointerdown', () => this.resumeGame());
 
-        // --- ГЛАВНОЕ МЕНЮ ---
         const menuBtn = this.add.text(640, 550, 'ГЛАВНОЕ МЕНЮ', {
             fontSize: '40px', color: '#ffffff', backgroundColor: '#884444',
             padding: { x: 30, y: 12 }
@@ -374,34 +396,27 @@ export class Start extends Phaser.Scene {
         this.highlightVolume();
     }
 
-    // ============================================================
-    // УСТАНОВКА ГРОМКОСТИ
-    // ============================================================
     setVolume(step) {
         this.musicVolume = step;
         localStorage.setItem('musicVolume', String(step));
 
         if (this.bgMusic) {
             if (step > 0) {
-                if (!this.bgMusic.isPlaying) {
-                    this.bgMusic.play();
-                }
+                if (!this.bgMusic.isPlaying) this.bgMusic.play();
                 this.bgMusic.setVolume(step);
             } else {
-                // 0% — останавливаем музыку
-                if (this.bgMusic.isPlaying) {
-                    this.bgMusic.pause();
-                }
+                if (this.bgMusic.isPlaying) this.bgMusic.pause();
                 this.bgMusic.setVolume(0);
             }
         }
 
+        // Обновляем громкость звуков монеты и удара
+        if (this.coinSound) this.coinSound.setVolume(step);
+        if (this.hitSound) this.hitSound.setVolume(step);
+
         this.highlightVolume();
     }
 
-    // ============================================================
-    // ПОДСВЕТКА ВЫБРАННОЙ ГРОМКОСТИ
-    // ============================================================
     highlightVolume() {
         this.volumeButtons.forEach(v => {
             if (Math.abs(v.step - this.musicVolume) < 0.01) {
@@ -412,32 +427,21 @@ export class Start extends Phaser.Scene {
         });
     }
 
-    // ============================================================
-    // ПЕРЕКЛЮЧЕНИЕ УПРАВЛЕНИЯ
-    // ============================================================
     toggleControl() {
         this.controlMode = this.controlMode === 'keyboard' ? 'mouse' : 'keyboard';
-
         this.registry.set('controlMode', this.controlMode);
         localStorage.setItem('controlMode', this.controlMode);
-
         this.controlBtn.setText(
             this.controlMode === 'keyboard' ? 'УПРАВЛЕНИЕ: КЛАВИАТУРА' : 'УПРАВЛЕНИЕ: МЫШЬ'
         );
-
         this.bindControls();
     }
 
-    // ============================================================
-    // СНЯТЬ ПАУЗУ
-    // ============================================================
     resumeGame() {
         if (!this.isPaused) return;
         this.isPaused = false;
-
         this.time.paused = false;
         this.tweens.resumeAll();
-
         if (this.pauseLayer) {
             this.pauseLayer.destroy();
             this.pauseLayer = null;
@@ -467,7 +471,7 @@ export class Start extends Phaser.Scene {
             fontSize: '40px', color: '#ffffff', fontFamily: 'Arial'
         }).setOrigin(0.5).setDepth(101);
 
-        this.add.text(640, 290, 'Введи имя для рекорда:', {
+        this.add.text(640, 260, 'Введи имя для рекорда:', {
             fontSize: '28px', color: '#dddddd', fontFamily: 'Arial'
         }).setOrigin(0.5).setDepth(101);
 
@@ -477,7 +481,7 @@ export class Start extends Phaser.Scene {
         input.placeholder = 'Имя';
         input.style.position = 'absolute';
         input.style.left = '50%';
-        input.style.top = '320px';
+        input.style.top = '360px';
         input.style.transform = 'translateX(-50%)';
         input.style.width = '360px';
         input.style.height = '48px';
@@ -501,7 +505,7 @@ export class Start extends Phaser.Scene {
         };
         this.events.once('shutdown', removeInput);
 
-        const saveBtn = this.add.text(640, 420, 'СОХРАНИТЬ РЕКОРД', {
+        const saveBtn = this.add.text(640, 450, 'СОХРАНИТЬ РЕКОРД', {
             fontSize: '32px', color: '#ffffff', backgroundColor: '#44aa44',
             padding: { x: 25, y: 10 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(101);
@@ -517,7 +521,7 @@ export class Start extends Phaser.Scene {
             saveBtn.setBackgroundColor('#333333');
         });
 
-        const restartBtn = this.add.text(460, 520, 'ЗАНОВО', {
+        const restartBtn = this.add.text(460, 540, 'ЗАНОВО', {
             fontSize: '36px', color: '#ffffff', backgroundColor: '#444444',
             padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(101);
@@ -529,7 +533,7 @@ export class Start extends Phaser.Scene {
             this.scene.restart();
         });
 
-        const menuBtn = this.add.text(820, 520, 'В МЕНЮ', {
+        const menuBtn = this.add.text(820, 540, 'В МЕНЮ', {
             fontSize: '36px', color: '#ffffff', backgroundColor: '#884444',
             padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(101);
@@ -542,26 +546,21 @@ export class Start extends Phaser.Scene {
         });
     }
 
-    // ============================================================
-    // СОХРАНЕНИЕ РЕКОРДА
-    // ============================================================
     saveRecord(name, score, equipped) {
         const KEY = 'catGameRecords';
         const records = JSON.parse(localStorage.getItem(KEY) || '[]');
-
         records.push({
             name: name,
             score: score,
             equipped: equipped,
             date: Date.now()
         });
-
         records.sort((a, b) => b.score - a.score);
         localStorage.setItem(KEY, JSON.stringify(records.slice(0, 50)));
     }
 
     // ============================================================
-    // UPDATE
+    // UPDATE (звуки монеты и удара, тряска при уроне)
     // ============================================================
     update() {
         if (this.gameOver || this.isPaused) return;
@@ -580,11 +579,29 @@ export class Start extends Phaser.Scene {
 
             if (dist < 70) {
                 if (enemy.getData('isRed')) {
+                    // УРОН
                     this.lives--;
                     this.updateHealthIcon();
+                    this.cameras.main.shake(300, 0.005);
+
+                    // Звук удара — перезапуск с начала
+                    if (this.hitSound) {
+                        this.hitSound.stop();
+                        this.hitSound.setVolume(this.musicVolume);
+                        this.hitSound.play();
+                    }
+
                     this.checkGameOver();
                 } else {
+                    // МОНЕТА
                     this.addScore(1);
+
+                    // Звук монеты — перезапуск с начала
+                    if (this.coinSound) {
+                        this.coinSound.stop();
+                        this.coinSound.setVolume(this.musicVolume);
+                        this.coinSound.play();
+                    }
                 }
                 enemy.destroy();
             }
