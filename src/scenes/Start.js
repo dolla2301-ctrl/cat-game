@@ -163,7 +163,7 @@ export class Start extends Phaser.Scene {
         if (this.isJumping || this.isAirborne) return;
 
         const newX = this.cat.x + distanceX;
-        if (newX < 100 || newX > 1180) return;
+        if (newX < 50 || newX > 1230) return;
 
         this.isJumping = true;
         const startY = this.cat.y;
