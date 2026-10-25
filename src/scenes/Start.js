@@ -81,7 +81,7 @@ export class Start extends Phaser.Scene {
         // --- РЕЖИМ УПРАВЛЕНИЯ ---
         this.controlMode = this.registry.get('controlMode')
             || localStorage.getItem('controlMode')
-            || 'keyboard';
+            || 'mouse';
 
         // --- КЛАВИАТУРА (только если выбран этот режим) ---
         if (this.controlMode === 'keyboard') {
