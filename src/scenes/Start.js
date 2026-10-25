@@ -20,10 +20,11 @@ export class Start extends Phaser.Scene {
         this.load.image('health2', 'assets/healts/healts2.png');
         this.load.image('health3', 'assets/healts/healts3.png');
         this.load.image('health4', 'assets/healts/healts4.png');
+
+        this.load.audio('bgMusic', 'assets/music/Tetris.mp3');
     }
 
     create() {
-        // --- СОСТОЯНИЕ ---
         this.gameOver = false;
         this.isPaused = false;
         this.isJumping = false;
@@ -31,15 +32,12 @@ export class Start extends Phaser.Scene {
         this.lives = 3;
         this.score = 0;
 
-        // --- ЭКИПИРОВКА ---
         const equipped = this.registry.get('equipped') || {
             jacket: 'jacket1', hat: 'hat1', hand: 'hand1'
         };
 
-        // --- ФОН ---
         this.add.image(640, 360, 'background').setDisplaySize(1280, 720);
 
-        // --- ТЕКСТУРЫ ШАРОВ ---
         if (!this.textures.exists('ball_red')) {
             const g = this.make.graphics({ x: 0, y: 0, add: false });
             g.fillStyle(0xff4444, 1);
@@ -55,7 +53,6 @@ export class Start extends Phaser.Scene {
             g.destroy();
         }
 
-        // --- КОТ ---
         const body = this.add.image(0, 0, equipped.jacket).setDepth(0);
         const hat = this.add.image(0, 0, equipped.hat).setDepth(1);
         const hand = this.add.image(0, 0, equipped.hand).setDepth(2);
@@ -63,51 +60,45 @@ export class Start extends Phaser.Scene {
         this.cat = this.add.container(200, 600, [body, hat, hand]);
         this.cat.setScale(0.8);
 
-        // --- ЖИЗНИ ---
         this.healthIcon = this.add.image(20, 20, 'health1')
             .setOrigin(0, 0)
             .setDepth(10);
 
-        // --- ОЧКИ ---
         this.scoreText = this.add.text(20, 136, 'Очки: 0', {
             fontSize: '32px', color: '#ffffff', fontFamily: 'Arial',
             backgroundColor: '#00000088', padding: { x: 10, y: 5 }
         }).setDepth(10);
 
-        // --- ВРАГИ ---
         this.enemies = this.add.group();
         this.spawnAccumulator = 0;
+
+        // --- МУЗЫКА ---
+        this.musicVolume = parseFloat(localStorage.getItem('musicVolume') ?? '0.5');
+        this.musicVolume = Math.max(0, Math.min(1, this.musicVolume));
+
+        if (!this.sound.get('bgMusic') || !this.sound.get('bgMusic').isPlaying) {
+            this.bgMusic = this.sound.add('bgMusic', {
+                loop: true,
+                volume: this.musicVolume
+            });
+            if (this.musicVolume > 0) this.bgMusic.play();
+        } else {
+            this.bgMusic = this.sound.get('bgMusic');
+            this.bgMusic.setVolume(this.musicVolume);
+        }
+
+        this.input.once('pointerdown', () => {
+            if (this.bgMusic && !this.bgMusic.isPlaying && this.musicVolume > 0) {
+                this.bgMusic.play();
+            }
+        });
 
         // --- РЕЖИМ УПРАВЛЕНИЯ ---
         this.controlMode = this.registry.get('controlMode')
             || localStorage.getItem('controlMode')
             || 'mouse';
 
-        // --- КЛАВИАТУРА (только если выбран этот режим) ---
-        if (this.controlMode === 'keyboard') {
-            this.input.keyboard.on('keydown-LEFT', () => this.tryJump(-108));
-            this.input.keyboard.on('keydown-RIGHT', () => this.tryJump(108));
-            this.input.keyboard.on('keydown-UP', () => this.tryJumpUp());
-            this.input.keyboard.on('keydown-DOWN', () => this.tryDuck());
-        }
-
-        // --- МЫШЬ / СЕНСОР (только если выбран этот режим) ---
-        if (this.controlMode === 'mouse') {
-            this.input.on('pointerdown', (pointer) => {
-                if (this.gameOver || this.isPaused) return;
-
-                // Игнорируем тап по кнопке паузы (она в правом верхнем углу)
-                if (pointer.x > 1180 && pointer.y < 80) return;
-
-                if (pointer.y < 240) {
-                    this.tryJumpUp();
-                    return;
-                }
-
-                if (pointer.x < 640) this.tryJump(-108);
-                else this.tryJump(108);
-            });
-        }
+        this.bindControls();
 
         // --- ESC = ПАУЗА ---
         this.input.keyboard.on('keydown-ESC', () => {
@@ -116,9 +107,9 @@ export class Start extends Phaser.Scene {
             else this.openPauseMenu();
         });
 
-        // --- КНОПКА ПАУЗЫ (правый верхний угол, для сенсора/мыши) ---
+        // --- КНОПКА «МЕНЮ» ---
         this.pauseBtn = this.add.text(1240, 20, 'МЕНЮ', {
-            fontSize: '36px', color: '#ffcc00', backgroundColor: '#00000088',
+            fontSize: '28px', color: '#ffcc00', backgroundColor: '#00000088',
             padding: { x: 14, y: 6 }
         })
         .setOrigin(1, 0)
@@ -131,6 +122,37 @@ export class Start extends Phaser.Scene {
             if (this.gameOver || this.isPaused) return;
             this.openPauseMenu();
         });
+    }
+
+    // ============================================================
+    // ПРИВЯЗКА УПРАВЛЕНИЯ
+    // ============================================================
+    bindControls() {
+        this.input.keyboard.off('keydown-LEFT');
+        this.input.keyboard.off('keydown-RIGHT');
+        this.input.keyboard.off('keydown-UP');
+        this.input.keyboard.off('keydown-DOWN');
+        this.input.off('pointerdown');
+
+        if (this.controlMode === 'keyboard') {
+            this.input.keyboard.on('keydown-LEFT', () => this.tryJump(-108));
+            this.input.keyboard.on('keydown-RIGHT', () => this.tryJump(108));
+            this.input.keyboard.on('keydown-UP', () => this.tryJumpUp());
+            this.input.keyboard.on('keydown-DOWN', () => this.tryDuck());
+        } else {
+            this.input.on('pointerdown', (pointer) => {
+                if (this.gameOver || this.isPaused) return;
+                if (pointer.x > 1100 && pointer.y < 80) return;
+
+                if (pointer.y < 240) {
+                    this.tryJumpUp();
+                    return;
+                }
+
+                if (pointer.x < 640) this.tryJump(-108);
+                else this.tryJump(108);
+            });
+        }
     }
 
     // ============================================================
@@ -204,17 +226,17 @@ export class Start extends Phaser.Scene {
     }
 
     // ============================================================
-    // СКОРОСТЬ ПАДЕНИЯ ШАРОВ
+    // СКОРОСТЬ ПАДЕНИЯ ШАРОВ (замедлено на 50%)
     // ============================================================
     getBallSpeedFactor() {
-        return Math.max(0.25, 1 - this.score * 0.02);
+        return Math.max(0.25, 1 - this.score * 0.01);
     }
 
     // ============================================================
-    // ИНТЕРВАЛ СПАВНА
+    // ИНТЕРВАЛ СПАВНА (замедлено на 50%)
     // ============================================================
     getSpawnInterval() {
-        const multiplier = Math.pow(2, Math.floor(this.score / 10));
+        const multiplier = Math.pow(2, Math.floor(this.score / 20));
         return Math.max(40, 600 / multiplier);
     }
 
@@ -270,11 +292,59 @@ export class Start extends Phaser.Scene {
         this.pauseLayer = this.add.container(0, 0).setDepth(200);
 
         const dim = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.7);
-        const title = this.add.text(640, 220, 'ПАУЗА', {
+        const title = this.add.text(640, 120, 'ПАУЗА', {
             fontSize: '72px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        const resumeBtn = this.add.text(640, 380, 'ПРОДОЛЖИТЬ', {
+        // --- ПОДПИСЬ ГРОМКОСТИ ---
+        const volLabel = this.add.text(640, 220, 'ГРОМКОСТЬ МУЗЫКИ:', {
+            fontSize: '28px', color: '#dddddd', fontFamily: 'Arial'
+        }).setOrigin(0.5);
+
+        // --- 5 КВАДРАТИКОВ ГРОМКОСТИ (0%, 25%, 50%, 75%, 100%) ---
+        this.volumeButtons = [];
+        const volumeSteps = [0, 0.25, 0.5, 0.75, 1.0];
+        const volumeLabels = ['0%', '25%', '50%', '75%', '100%'];
+
+        volumeSteps.forEach((step, i) => {
+            const x = 380 + i * 130;
+            const y = 280;
+
+            const bg = this.add.rectangle(x, y, 100, 60, 0x444444)
+                .setInteractive({ useHandCursor: true });
+
+            const label = this.add.text(x, y, volumeLabels[i], {
+                fontSize: '24px', color: '#ffffff', fontFamily: 'Arial',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+
+            bg.on('pointerover', () => {
+                if (Math.abs(this.musicVolume - step) > 0.01) {
+                    bg.setFillStyle(0x666666);
+                }
+            });
+            bg.on('pointerout', () => {
+                if (Math.abs(this.musicVolume - step) > 0.01) {
+                    bg.setFillStyle(0x444444);
+                }
+            });
+            bg.on('pointerdown', () => this.setVolume(step));
+
+            this.volumeButtons.push({ bg, label, step });
+        });
+
+        // --- КНОПКА УПРАВЛЕНИЯ ---
+        this.controlBtn = this.add.text(640, 370, this.controlMode === 'keyboard' ? 'УПРАВЛЕНИЕ: КЛАВИАТУРА' : 'УПРАВЛЕНИЕ: МЫШЬ', {
+            fontSize: '32px', color: '#ffffff', backgroundColor: '#444444',
+            padding: { x: 25, y: 10 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        this.controlBtn.on('pointerover', () => this.controlBtn.setBackgroundColor('#666666'));
+        this.controlBtn.on('pointerout', () => this.controlBtn.setBackgroundColor('#444444'));
+        this.controlBtn.on('pointerdown', () => this.toggleControl());
+
+        // --- ПРОДОЛЖИТЬ ---
+        const resumeBtn = this.add.text(640, 460, 'ПРОДОЛЖИТЬ', {
             fontSize: '40px', color: '#ffffff', backgroundColor: '#44aa44',
             padding: { x: 30, y: 12 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -283,7 +353,8 @@ export class Start extends Phaser.Scene {
         resumeBtn.on('pointerout', () => resumeBtn.setBackgroundColor('#44aa44'));
         resumeBtn.on('pointerdown', () => this.resumeGame());
 
-        const menuBtn = this.add.text(640, 490, 'ГЛАВНОЕ МЕНЮ', {
+        // --- ГЛАВНОЕ МЕНЮ ---
+        const menuBtn = this.add.text(640, 550, 'ГЛАВНОЕ МЕНЮ', {
             fontSize: '40px', color: '#ffffff', backgroundColor: '#884444',
             padding: { x: 30, y: 12 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -296,9 +367,70 @@ export class Start extends Phaser.Scene {
             this.scene.start('Menu');
         });
 
-        this.pauseLayer.add([dim, title, resumeBtn, menuBtn]);
+        this.pauseLayer.add([dim, title, volLabel]);
+        this.volumeButtons.forEach(v => this.pauseLayer.add([v.bg, v.label]));
+        this.pauseLayer.add([this.controlBtn, resumeBtn, menuBtn]);
+
+        this.highlightVolume();
     }
 
+    // ============================================================
+    // УСТАНОВКА ГРОМКОСТИ
+    // ============================================================
+    setVolume(step) {
+        this.musicVolume = step;
+        localStorage.setItem('musicVolume', String(step));
+
+        if (this.bgMusic) {
+            if (step > 0) {
+                if (!this.bgMusic.isPlaying) {
+                    this.bgMusic.play();
+                }
+                this.bgMusic.setVolume(step);
+            } else {
+                // 0% — останавливаем музыку
+                if (this.bgMusic.isPlaying) {
+                    this.bgMusic.pause();
+                }
+                this.bgMusic.setVolume(0);
+            }
+        }
+
+        this.highlightVolume();
+    }
+
+    // ============================================================
+    // ПОДСВЕТКА ВЫБРАННОЙ ГРОМКОСТИ
+    // ============================================================
+    highlightVolume() {
+        this.volumeButtons.forEach(v => {
+            if (Math.abs(v.step - this.musicVolume) < 0.01) {
+                v.bg.setFillStyle(0x44aa44);
+            } else {
+                v.bg.setFillStyle(0x444444);
+            }
+        });
+    }
+
+    // ============================================================
+    // ПЕРЕКЛЮЧЕНИЕ УПРАВЛЕНИЯ
+    // ============================================================
+    toggleControl() {
+        this.controlMode = this.controlMode === 'keyboard' ? 'mouse' : 'keyboard';
+
+        this.registry.set('controlMode', this.controlMode);
+        localStorage.setItem('controlMode', this.controlMode);
+
+        this.controlBtn.setText(
+            this.controlMode === 'keyboard' ? 'УПРАВЛЕНИЕ: КЛАВИАТУРА' : 'УПРАВЛЕНИЕ: МЫШЬ'
+        );
+
+        this.bindControls();
+    }
+
+    // ============================================================
+    // СНЯТЬ ПАУЗУ
+    // ============================================================
     resumeGame() {
         if (!this.isPaused) return;
         this.isPaused = false;
@@ -446,7 +578,7 @@ export class Start extends Phaser.Scene {
                 this.cat.x, this.cat.y, enemy.x, enemy.y
             );
 
-            if (dist < 60) {
+            if (dist < 70) {
                 if (enemy.getData('isRed')) {
                     this.lives--;
                     this.updateHealthIcon();
