@@ -70,7 +70,7 @@ export class Menu extends Phaser.Scene {
         // --- КНОПКИ ---
         this.createButton(640, 400, 'НАЧАТЬ ИГРУ', () => this.scene.start('Start'));
 
-        // Кнопка «ДОНАТ АВТОРУ» — золотая, под «НАЧАТЬ ИГРУ»
+        // Кнопка «ДОНАТ АВТОРУ» — золотая, на pointerup (для iPhone)
         const donateBtn = this.add.text(640, 460, 'ДОНАТ АВТОРУ', {
             fontSize: '28px', color: '#ffffff', backgroundColor: '#aa8800',
             padding: { x: 20, y: 10 }
@@ -78,7 +78,7 @@ export class Menu extends Phaser.Scene {
 
         donateBtn.on('pointerover', () => donateBtn.setBackgroundColor('#ccaa22'));
         donateBtn.on('pointerout', () => donateBtn.setBackgroundColor('#aa8800'));
-        donateBtn.on('pointerdown', () => {
+        donateBtn.on('pointerup', () => {
             window.open('https://www.donationalerts.com/r/donutdobrychki', '_blank');
         });
 
