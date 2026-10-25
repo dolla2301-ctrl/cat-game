@@ -17,7 +17,7 @@ export class Settings extends Phaser.Scene {
         // Читаем текущий выбор (по умолчанию — клавиатура)
         this.controlMode = this.registry.get('controlMode')
             || localStorage.getItem('controlMode')
-            || 'keyboard';
+            || 'mouse';
 
         this.add.text(640, 220, 'Способ управления:', {
             fontSize: '32px', color: '#dddddd', fontFamily: 'Arial'
