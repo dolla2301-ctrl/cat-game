@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Добрячки</title>
     <style>
-        /* Reset CSS */
         *,
         *::before,
         *::after {
@@ -26,11 +25,10 @@
             font-family: Arial, sans-serif;
         }
 
-        /* Контейнер игры на весь экран */
         #game-container {
             width: 100vw;
             height: 100vh;
-            height: 100dvh; /* Для современных iOS — учитывает панели Safari */
+            height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -38,7 +36,6 @@
             background: #000;
         }
 
-        /* Канвас не должен скроллить страницу при касаниях */
         canvas {
             display: block;
             touch-action: none;
@@ -61,7 +58,6 @@
             color: inherit;
         }
 
-        /* Счётчик скрыт от игроков, но работает */
         .hidden-counter {
             display: none;
         }
@@ -70,12 +66,30 @@
 <body>
     <div id="game-container"></div>
 
-    <!-- Счётчик посещений: считает всех, но НЕ виден на странице -->
     <div class="hidden-counter">
         <a href="https://hits.sh/dolla2301-ctrl.github.io/cat-game/">
             <img alt="Hits" src="https://hits.sh/dolla2301-ctrl.github.io/cat-game.svg"/>
         </a>
     </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+        import { getDatabase } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAXwTzC0sMcozw8gI3YXCAyntLe12I1Tw",
+            authDomain: "cat-game-4c85e.firebaseapp.com",
+            databaseURL: "https://cat-game-4c85e-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "cat-game-4c85e",
+            storageBucket: "cat-game-4c85e.firebasestorage.app",
+            messagingSenderId: "2527921324",
+            appId: "1:2527921324:web:2bde3bf3cc7b91533f0b09"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getDatabase(app);
+    </script>
 
     <script src="./phaser.js"></script>
     <script type="module" src="./src/main.js"></script>
