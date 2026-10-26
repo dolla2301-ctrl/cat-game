@@ -13,7 +13,7 @@ const config = {
     pixelArt: true,
     roundPixels: true,
     scale: {
-        mode: Phaser.Scale.ENVELOP,
+        mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
     scene: [Menu, Wardrobe, Start, Scores, Settings]
