@@ -21,6 +21,9 @@ export class Start extends Phaser.Scene {
         this.load.image('health2', 'assets/healts/healts2.png');
         this.load.image('health3', 'assets/healts/healts3.png');
         this.load.image('health4', 'assets/healts/healts4.png');
+        this.load.image('health5', 'assets/healts/healts5.png');
+        this.load.image('health6', 'assets/healts/healts6.png');
+        this.load.image('health7', 'assets/healts/healts7.png');
 
         this.load.image('money', 'assets/balls/money.png');
         this.load.image('bomb', 'assets/balls/bomb.png');
@@ -35,7 +38,6 @@ export class Start extends Phaser.Scene {
         this.gameOver = false;
         this.isPaused = false;
         this.isJumping = false;
-        this.lives = 3;
         this.score = 0;
 
         this.spawnPositions = [52, 160, 268, 376, 484, 592, 700, 808, 916, 1024, 1132];
@@ -44,13 +46,15 @@ export class Start extends Phaser.Scene {
             jacket: 'jacket1', hat: 'hat1', hand: 'hand1'
         };
 
-        // Выбираем фон: space2, если надета hat11, иначе space
         const useSpace2 = this.registry.get('useSpace2')
             ?? (localStorage.getItem('useSpace2') === 'true');
+
+        this.armor = useSpace2 ? 3 : 0;
+        this.lives = 3;
+
         const bgKey = (useSpace2 && this.textures.exists('space2')) ? 'space2' : 'background';
         this.add.image(640, 360, bgKey).setDisplaySize(1280, 720);
 
-        // --- МЕТЕЛЬ (только на фоне space2) ---
         this.snowflakes = [];
         if (bgKey === 'space2') {
             if (!this.textures.exists('snowflake')) {
@@ -103,7 +107,8 @@ export class Start extends Phaser.Scene {
         this.cat = this.add.container(200, 600, [body, hat, hand]);
         this.cat.setScale(0.8);
 
-        this.healthIcon = this.add.image(20, 20, 'health1')
+        const initialHealthKey = useSpace2 ? 'health7' : 'health1';
+        this.healthIcon = this.add.image(20, 20, initialHealthKey)
             .setOrigin(0, 0)
             .setDepth(10);
 
@@ -115,32 +120,37 @@ export class Start extends Phaser.Scene {
         this.enemies = this.add.group();
         this.spawnAccumulator = 0;
 
-        // --- МУЗЫКА (tetris2 при hat11, иначе tetris) ---
         this.musicVolume = parseFloat(localStorage.getItem('musicVolume') ?? '0.5');
         this.musicVolume = Math.max(0, Math.min(1, this.musicVolume));
 
-        const musicKey = useSpace2 ? 'bgMusic2' : 'bgMusic';
-
-        // Останавливаем другую музыку, если играет (из меню)
-        if (this.sound.get('bgMusic') && this.sound.get('bgMusic').isPlaying && musicKey !== 'bgMusic') {
-            this.sound.get('bgMusic').stop();
-        }
-        if (this.sound.get('bgMusic2') && this.sound.get('bgMusic2').isPlaying && musicKey !== 'bgMusic2') {
-            this.sound.get('bgMusic2').stop();
+        let musicKey = useSpace2 ? 'bgMusic2' : 'bgMusic';
+        if (musicKey === 'bgMusic2' && !this.cache.audio.exists('bgMusic2')) {
+            musicKey = 'bgMusic';
         }
 
-        if (!this.sound.get(musicKey) || !this.sound.get(musicKey).isPlaying) {
-            this.bgMusic = this.sound.add(musicKey, {
-                loop: true,
-                volume: this.musicVolume
-            });
-            if (this.musicVolume > 0) this.bgMusic.play();
-        } else {
-            this.bgMusic = this.sound.get(musicKey);
-            this.bgMusic.setVolume(this.musicVolume);
+        try {
+            if (this.sound.get('bgMusic') && this.sound.get('bgMusic').isPlaying && musicKey !== 'bgMusic') {
+                this.sound.get('bgMusic').stop();
+            }
+            if (this.sound.get('bgMusic2') && this.sound.get('bgMusic2').isPlaying && musicKey !== 'bgMusic2') {
+                this.sound.get('bgMusic2').stop();
+            }
+
+            if (!this.sound.get(musicKey) || !this.sound.get(musicKey).isPlaying) {
+                this.bgMusic = this.sound.add(musicKey, {
+                    loop: true,
+                    volume: this.musicVolume
+                });
+                if (this.musicVolume > 0) this.bgMusic.play();
+            } else {
+                this.bgMusic = this.sound.get(musicKey);
+                this.bgMusic.setVolume(this.musicVolume);
+            }
+        } catch (e) {
+            console.warn('Музыка не загрузилась, игра работает без неё');
+            this.bgMusic = null;
         }
 
-        // --- ЗВУКИ ---
         if (!this.sound.get('coinSound')) {
             this.coinSound = this.sound.add('coinSound', { volume: this.musicVolume });
         } else {
@@ -283,7 +293,15 @@ export class Start extends Phaser.Scene {
     }
 
     updateHealthIcon() {
-        this.healthIcon.setTexture('health' + (4 - this.lives));
+        if (this.armor === 3) {
+            this.healthIcon.setTexture('health7');
+        } else if (this.armor === 2) {
+            this.healthIcon.setTexture('health6');
+        } else if (this.armor === 1) {
+            this.healthIcon.setTexture('health5');
+        } else {
+            this.healthIcon.setTexture('health' + (4 - this.lives));
+        }
     }
 
     openPauseMenu() {
@@ -531,7 +549,6 @@ export class Start extends Phaser.Scene {
     update() {
         if (this.gameOver || this.isPaused) return;
 
-        // --- МЕТЕЛЬ ---
         if (this.snowflakes && this.snowflakes.length > 0) {
             const delta = this.game.loop.delta / 1000;
 
@@ -564,8 +581,6 @@ export class Start extends Phaser.Scene {
 
             if (dist < 65) {
                 if (enemy.getData('isRed')) {
-                    this.lives--;
-                    this.updateHealthIcon();
                     this.cameras.main.shake(300, 0.005);
 
                     if (this.hitSound) {
@@ -574,7 +589,33 @@ export class Start extends Phaser.Scene {
                         this.hitSound.play();
                     }
 
-                    this.checkGameOver();
+                    // Броня или жизнь
+                    if (this.armor > 0) {
+                        this.armor--;
+                        this.updateHealthIcon();
+                    } else {
+                        this.lives--;
+                        this.updateHealthIcon();
+                        this.checkGameOver();
+                    }
+
+                    // Бомба отлетает — и при броне, и при уроне
+                    this.tweens.killTweensOf(enemy);
+                    this.enemies.remove(enemy);
+
+                    const direction = Phaser.Math.Between(0, 1) ? 1 : -1;
+                    const flyX = enemy.x + direction * 500;
+
+                    this.tweens.add({
+                        targets: enemy,
+                        x: flyX,
+                        y: enemy.y - 150,
+                        angle: direction * 720,
+                        alpha: 0,
+                        duration: 700,
+                        ease: 'Quad.easeOut',
+                        onComplete: () => { enemy.destroy(); }
+                    });
                 } else {
                     this.addScore(1);
 
@@ -583,8 +624,8 @@ export class Start extends Phaser.Scene {
                         this.coinSound.setVolume(this.musicVolume);
                         this.coinSound.play();
                     }
+                    enemy.destroy();
                 }
-                enemy.destroy();
             }
         });
     }
