@@ -318,7 +318,6 @@ export class Start extends Phaser.Scene {
             fontSize: '64px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        // --- РЕЖИМ ЭКРАНА (выше громкости) ---
         const screenLabel = this.add.text(640, 150, 'Режим экрана:', {
             fontSize: '26px', color: '#dddddd', fontFamily: 'Arial'
         }).setOrigin(0.5);
@@ -353,7 +352,6 @@ export class Start extends Phaser.Scene {
 
         this.highlightScreenMode();
 
-        // --- ГРОМКОСТЬ (ниже экрана, меньше на 30%) ---
         const volLabel = this.add.text(640, 290, 'Громкость музыки:', {
             fontSize: '22px', color: '#dddddd', fontFamily: 'Arial'
         }).setOrigin(0.5);
@@ -387,7 +385,6 @@ export class Start extends Phaser.Scene {
 
         this.highlightVolume();
 
-        // --- УПРАВЛЕНИЕ ---
         this.controlBtn = this.add.text(640, 400, this.controlMode === 'keyboard' ? 'УПРАВЛЕНИЕ: КЛАВИАТУРА' : 'УПРАВЛЕНИЕ: МЫШЬ', {
             fontSize: '28px', color: '#ffffff', backgroundColor: '#444444',
             padding: { x: 25, y: 10 }
@@ -397,7 +394,6 @@ export class Start extends Phaser.Scene {
         this.controlBtn.on('pointerout', () => this.controlBtn.setBackgroundColor('#444444'));
         this.controlBtn.on('pointerdown', () => this.toggleControl());
 
-        // --- ПРОДОЛЖИТЬ / ГЛАВНОЕ МЕНЮ ---
         const resumeBtn = this.add.text(640, 480, 'ПРОДОЛЖИТЬ', {
             fontSize: '36px', color: '#ffffff', backgroundColor: '#44aa44',
             padding: { x: 30, y: 12 }
@@ -596,8 +592,7 @@ export class Start extends Phaser.Scene {
     }
 
     saveRecord(name, score, equipped) {
-        // Fallback на localStorage, если Firebase не подключился
-        if (!window.db) {
+        if (!window.db || !window.fbRef || !window.fbPush) {
             console.warn('Firebase не подключён, сохраняем локально');
             const KEY = 'catGameRecords';
             const records = JSON.parse(localStorage.getItem(KEY) || '[]');
@@ -607,17 +602,14 @@ export class Start extends Phaser.Scene {
             return;
         }
 
-        import('https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js')
-            .then(({ ref, push }) => {
-                const scoresRef = ref(window.db, 'scores');
-                push(scoresRef, {
-                    name: name,
-                    score: score,
-                    equipped: equipped,
-                    date: Date.now()
-                });
-            })
-            .catch(err => {
+        try {
+            const scoresRef = window.fbRef(window.db, 'scores');
+            window.fbPush(scoresRef, {
+                name: name,
+                score: score,
+                equipped: equipped,
+                date: Date.now()
+            }).catch(err => {
                 console.error('Ошибка сохранения в Firebase:', err);
                 const KEY = 'catGameRecords';
                 const records = JSON.parse(localStorage.getItem(KEY) || '[]');
@@ -625,6 +617,9 @@ export class Start extends Phaser.Scene {
                 records.sort((a, b) => b.score - a.score);
                 localStorage.setItem(KEY, JSON.stringify(records.slice(0, 50)));
             });
+        } catch (err) {
+            console.error('Ошибка Firebase:', err);
+        }
     }
 
     update() {
