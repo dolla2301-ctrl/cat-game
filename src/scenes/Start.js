@@ -18,15 +18,10 @@ export class Start extends Phaser.Scene {
         }
 
         this.load.image('health1', 'assets/healts/healts1.png');
-        this.load.image('health2', 'assets/healts/healts2.png');
-        this.load.image('health3', 'assets/healts/healts3.png');
-        this.load.image('health4', 'assets/healts/healts4.png');
-        this.load.image('health5', 'assets/healts/healts5.png');
-        this.load.image('health6', 'assets/healts/healts6.png');
-        this.load.image('health7', 'assets/healts/healts7.png');
 
         this.load.image('money', 'assets/balls/money.png');
         this.load.image('bomb', 'assets/balls/bomb.png');
+        this.load.image('heartBall', 'assets/balls/healt.png');
 
         this.load.audio('bgMusic', 'assets/music/tetris.mp3');
         this.load.audio('bgMusic2', 'assets/music/tetris2.mp3');
@@ -49,7 +44,6 @@ export class Start extends Phaser.Scene {
         const useSpace2 = this.registry.get('useSpace2')
             ?? (localStorage.getItem('useSpace2') === 'true');
 
-        this.armor = useSpace2 ? 3 : 0;
         this.lives = 3;
 
         const bgKey = (useSpace2 && this.textures.exists('space2')) ? 'space2' : 'background';
@@ -107,10 +101,9 @@ export class Start extends Phaser.Scene {
         this.cat = this.add.container(200, 600, [body, hat, hand]);
         this.cat.setScale(0.8);
 
-        const initialHealthKey = useSpace2 ? 'health7' : 'health1';
-        this.healthIcon = this.add.image(20, 20, initialHealthKey)
-            .setOrigin(0, 0)
-            .setDepth(10);
+        // Контейнер для сердец (слева сверху)
+        this.heartsContainer = this.add.container(20, 20).setDepth(10);
+        this.updateHeartsDisplay();
 
         this.scoreText = this.add.text(20, 136, 'Очки: 0', {
             fontSize: '32px', color: '#ffffff', fontFamily: 'Arial',
@@ -119,6 +112,7 @@ export class Start extends Phaser.Scene {
 
         this.enemies = this.add.group();
         this.spawnAccumulator = 0;
+        this.nextHeartScore = 20;
 
         this.musicVolume = parseFloat(localStorage.getItem('musicVolume') ?? '0.5');
         this.musicVolume = Math.max(0, Math.min(1, this.musicVolume));
@@ -197,6 +191,20 @@ export class Start extends Phaser.Scene {
         });
     }
 
+    updateHeartsDisplay() {
+        this.heartsContainer.removeAll(true);
+
+        // Увеличено на 33%: было 50 / 0.6, стало 66 / 0.8
+        const heartWidth = 66;
+        for (let i = 0; i < this.lives; i++) {
+            this.heartsContainer.add(
+                this.add.image(i * heartWidth, 0, 'health1')
+                    .setOrigin(0, 0)
+                    .setScale(0.8)
+            );
+        }
+    }
+
     bindControls() {
         this.input.keyboard.off('keydown-LEFT');
         this.input.keyboard.off('keydown-RIGHT');
@@ -247,12 +255,25 @@ export class Start extends Phaser.Scene {
     }
 
     getBallSpeedFactor() {
-        return Math.max(0.25, 1 - this.score * 0.01);
+        const s = this.score;
+        if (s <= 40) {
+            return 1 - s * 0.01;
+        }
+        if (s <= 70) {
+            return 0.6 - (s - 40) * 0.003;
+        }
+        const factor = 0.51 - (s - 70) * 0.0015;
+        return Math.max(0.3, factor);
     }
 
     getSpawnInterval() {
-        const multiplier = Math.pow(2, Math.floor(this.score / 20));
-        return Math.max(40, 600 / multiplier);
+        const s = this.score;
+        if (s < 20) return 600;
+        if (s < 40) return 400;
+        if (s < 70) return 280;
+        if (s < 100) return 220;
+        if (s < 150) return 170;
+        return Math.max(120, 170 - (s - 150) * 1);
     }
 
     spawnEnemy() {
@@ -287,20 +308,32 @@ export class Start extends Phaser.Scene {
         });
     }
 
+    spawnHeartBall() {
+        if (this.gameOver || this.isPaused) return;
+
+        const x = Phaser.Utils.Array.GetRandom(this.spawnPositions);
+        const heartBall = this.add.sprite(x, -50, 'heartBall');
+        heartBall.setDisplaySize(100, 100);
+        heartBall.setData('isHeart', true);
+        this.enemies.add(heartBall);
+
+        const baseFall = 2200;
+        this.tweens.add({
+            targets: heartBall,
+            y: 750,
+            duration: baseFall * this.getBallSpeedFactor(),
+            ease: 'Linear',
+            onComplete: () => { heartBall.destroy(); }
+        });
+    }
+
     addScore(amount) {
         this.score += amount;
         this.scoreText.setText('Очки: ' + this.score);
-    }
 
-    updateHealthIcon() {
-        if (this.armor === 3) {
-            this.healthIcon.setTexture('health7');
-        } else if (this.armor === 2) {
-            this.healthIcon.setTexture('health6');
-        } else if (this.armor === 1) {
-            this.healthIcon.setTexture('health5');
-        } else {
-            this.healthIcon.setTexture('health' + (4 - this.lives));
+        if (this.score >= this.nextHeartScore) {
+            this.nextHeartScore += 20;
+            this.spawnHeartBall();
         }
     }
 
@@ -603,7 +636,6 @@ export class Start extends Phaser.Scene {
         }
 
         try {
-            // Ключ = имя (без спецсимволов Firebase). При повторной записи старая перезапишется
             const nameKey = name.replace(/[.#$[\]]/g, '_');
             const scoreRef = window.fbRef(window.db, 'scores/' + nameKey);
 
@@ -659,6 +691,21 @@ export class Start extends Phaser.Scene {
             );
 
             if (dist < 65) {
+                if (enemy.getData('isHeart')) {
+                    this.lives++;
+                    this.updateHeartsDisplay();
+
+                    // Звук при подборе сердца (money.mp3)
+                    if (this.coinSound) {
+                        this.coinSound.stop();
+                        this.coinSound.setVolume(this.musicVolume);
+                        this.coinSound.play();
+                    }
+
+                    enemy.destroy();
+                    return;
+                }
+
                 if (enemy.getData('isRed')) {
                     this.cameras.main.shake(300, 0.005);
 
@@ -668,14 +715,9 @@ export class Start extends Phaser.Scene {
                         this.hitSound.play();
                     }
 
-                    if (this.armor > 0) {
-                        this.armor--;
-                        this.updateHealthIcon();
-                    } else {
-                        this.lives--;
-                        this.updateHealthIcon();
-                        this.checkGameOver();
-                    }
+                    this.lives--;
+                    this.updateHeartsDisplay();
+                    this.checkGameOver();
 
                     this.tweens.killTweensOf(enemy);
                     this.enemies.remove(enemy);
