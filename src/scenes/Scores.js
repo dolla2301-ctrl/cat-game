@@ -14,10 +14,14 @@ export class Scores extends Phaser.Scene {
             this.load.image('hand' + i, `assets/hands/hand${i}.png`);
         }
         this.load.image('background', 'assets/space.png');
+        this.load.image('space2', 'assets/space2.png');
     }
 
     create() {
-        this.add.image(640, 360, 'background').setDisplaySize(1280, 720);
+        const useSpace2 = this.registry.get('useSpace2')
+            ?? (localStorage.getItem('useSpace2') === 'true');
+        const bgKey = (useSpace2 && this.textures.exists('space2')) ? 'space2' : 'background';
+        this.add.image(640, 360, bgKey).setDisplaySize(1280, 720);
 
         this.add.text(640, 50, 'РЕКОРДЫ', {
             fontSize: '56px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
