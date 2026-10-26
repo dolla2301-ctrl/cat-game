@@ -5,13 +5,30 @@ export class Settings extends Phaser.Scene {
 
     preload() {
         this.load.image('background', 'assets/space.png');
+        this.load.image('space2', 'assets/space2.png');
+
+        this.load.audio('bgMusic', 'assets/music/tetris.mp3');
+        this.load.audio('bgMusic2', 'assets/music/tetris2.mp3');
     }
 
     create() {
-        this.add.image(640, 360, 'background').setDisplaySize(1280, 720);
+        // Флаг hat11
+        const useSpace2 = this.registry.get('useSpace2')
+            ?? (localStorage.getItem('useSpace2') === 'true');
+
+        // Фон: space2 при hat11
+        const bgKey = (useSpace2 && this.textures.exists('space2')) ? 'space2' : 'background';
+        this.add.image(640, 360, bgKey).setDisplaySize(1280, 720);
+
+        // Цвета выбранных кнопок: красный при hat11, зелёный иначе
+        this.activeColor = useSpace2 ? 0xaa0000 : 0x44aa44;
+        this.activeColorHex = useSpace2 ? '#aa0000' : '#44aa44';
+
+        // Ключ музыки: tetris2 при hat11, tetris иначе
+        this.musicKey = (useSpace2 && this.cache.audio.exists('bgMusic2')) ? 'bgMusic2' : 'bgMusic';
 
         // Заголовок
-        this.add.text(640, 60, 'НАСТРОЙКИ', {
+        this.add.text(640, 50, 'НАСТРОЙКИ', {
             fontSize: '56px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold',
             backgroundColor: '#00000088', padding: { x: 20, y: 10 }
         }).setOrigin(0.5);
@@ -19,8 +36,8 @@ export class Settings extends Phaser.Scene {
         // ============================================================
         // БЛОК 1: УПРАВЛЕНИЕ
         // ============================================================
-        this.add.text(640, 140, 'Способ управления:', {
-            fontSize: '30px', color: '#ffffff', fontFamily: 'Arial',
+        this.add.text(640, 130, 'Способ управления:', {
+            fontSize: '28px', color: '#ffffff', fontFamily: 'Arial',
             backgroundColor: '#00000088', padding: { x: 15, y: 8 }
         }).setOrigin(0.5);
 
@@ -28,10 +45,9 @@ export class Settings extends Phaser.Scene {
             || localStorage.getItem('controlMode')
             || 'mouse';
 
-        // Кнопка "КЛАВИАТУРА"
-        this.keyboardBtn = this.add.text(430, 210, '⌨ КЛАВИАТУРА', {
-            fontSize: '26px', color: '#ffffff', backgroundColor: '#444444',
-            padding: { x: 22, y: 12 }
+        this.keyboardBtn = this.add.text(430, 190, '⌨ КЛАВИАТУРА', {
+            fontSize: '24px', color: '#ffffff', backgroundColor: '#444444',
+            padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         this.keyboardBtn.on('pointerover', () => {
@@ -42,10 +58,9 @@ export class Settings extends Phaser.Scene {
         });
         this.keyboardBtn.on('pointerdown', () => this.setMode('keyboard'));
 
-        // Кнопка "МЫШЬ / СЕНСОР"
-        this.mouseBtn = this.add.text(850, 210, '🖱 МЫШЬ / СЕНСОР', {
-            fontSize: '26px', color: '#ffffff', backgroundColor: '#444444',
-            padding: { x: 22, y: 12 }
+        this.mouseBtn = this.add.text(850, 190, '🖱 МЫШЬ / СЕНСОР', {
+            fontSize: '24px', color: '#ffffff', backgroundColor: '#444444',
+            padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         this.mouseBtn.on('pointerover', () => {
@@ -59,10 +74,10 @@ export class Settings extends Phaser.Scene {
         this.highlightCurrent();
 
         // ============================================================
-        // БЛОК 2: ГРОМКОСТЬ МУЗЫКИ (5 квадратиков)
+        // БЛОК 2: ГРОМКОСТЬ (квадратики меньше на 30%)
         // ============================================================
-        this.add.text(640, 330, 'Громкость музыки:', {
-            fontSize: '30px', color: '#ffffff', fontFamily: 'Arial',
+        this.add.text(640, 260, 'Громкость музыки:', {
+            fontSize: '28px', color: '#ffffff', fontFamily: 'Arial',
             backgroundColor: '#00000088', padding: { x: 15, y: 8 }
         }).setOrigin(0.5);
 
@@ -74,14 +89,14 @@ export class Settings extends Phaser.Scene {
         const volumeLabels = ['0%', '25%', '50%', '75%', '100%'];
 
         volumeSteps.forEach((step, i) => {
-            const x = 380 + i * 130;
-            const y = 400;
+            const x = 430 + i * 105;
+            const y = 320;
 
-            const bg = this.add.rectangle(x, y, 100, 60, 0x444444)
+            const bg = this.add.rectangle(x, y, 70, 35, 0x444444)
                 .setInteractive({ useHandCursor: true });
 
             const label = this.add.text(x, y, volumeLabels[i], {
-                fontSize: '24px', color: '#ffffff', fontFamily: 'Arial',
+                fontSize: '16px', color: '#ffffff', fontFamily: 'Arial',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
 
@@ -97,6 +112,44 @@ export class Settings extends Phaser.Scene {
         });
 
         this.highlightVolume();
+
+        // ============================================================
+        // БЛОК 3: ЭКРАН (крупные кнопки)
+        // ============================================================
+        this.add.text(640, 400, 'Режим экрана:', {
+            fontSize: '28px', color: '#ffffff', fontFamily: 'Arial',
+            backgroundColor: '#00000088', padding: { x: 15, y: 8 }
+        }).setOrigin(0.5);
+
+        this.screenMode = localStorage.getItem('screenMode') || 'FIT';
+
+        this.fitBtn = this.add.text(430, 470, 'СТАНДАРТ', {
+            fontSize: '26px', color: '#ffffff', backgroundColor: '#444444',
+            padding: { x: 22, y: 10 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        this.fitBtn.on('pointerover', () => {
+            if (this.screenMode !== 'FIT') this.fitBtn.setBackgroundColor('#666666');
+        });
+        this.fitBtn.on('pointerout', () => {
+            if (this.screenMode !== 'FIT') this.fitBtn.setBackgroundColor('#444444');
+        });
+        this.fitBtn.on('pointerdown', () => this.setScreenMode('FIT'));
+
+        this.envelopBtn = this.add.text(850, 470, 'РАСТЯНУТЬ', {
+            fontSize: '26px', color: '#ffffff', backgroundColor: '#444444',
+            padding: { x: 22, y: 10 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        this.envelopBtn.on('pointerover', () => {
+            if (this.screenMode !== 'ENVELOP') this.envelopBtn.setBackgroundColor('#666666');
+        });
+        this.envelopBtn.on('pointerout', () => {
+            if (this.screenMode !== 'ENVELOP') this.envelopBtn.setBackgroundColor('#444444');
+        });
+        this.envelopBtn.on('pointerdown', () => this.setScreenMode('ENVELOP'));
+
+        this.highlightScreenMode();
 
         // ============================================================
         // КНОПКА "НАЗАД"
@@ -122,11 +175,11 @@ export class Settings extends Phaser.Scene {
 
     highlightCurrent() {
         if (this.controlMode === 'keyboard') {
-            this.keyboardBtn.setBackgroundColor('#44aa44');
+            this.keyboardBtn.setBackgroundColor(this.activeColorHex);
             this.mouseBtn.setBackgroundColor('#444444');
         } else {
             this.keyboardBtn.setBackgroundColor('#444444');
-            this.mouseBtn.setBackgroundColor('#44aa44');
+            this.mouseBtn.setBackgroundColor(this.activeColorHex);
         }
     }
 
@@ -134,8 +187,8 @@ export class Settings extends Phaser.Scene {
         this.musicVolume = step;
         localStorage.setItem('musicVolume', String(step));
 
-        // Применяем громкость к музыке, если она играет
-        const bgMusic = this.sound.get('bgMusic');
+        // Применяем к нужной музыке (tetris2 при hat11, tetris иначе)
+        const bgMusic = this.sound.get(this.musicKey);
         if (bgMusic) {
             if (step > 0) {
                 if (!bgMusic.isPlaying) bgMusic.play();
@@ -146,16 +199,47 @@ export class Settings extends Phaser.Scene {
             }
         }
 
+        // На всякий случай применяем и к другой, чтобы не было рассинхрона
+        const otherKey = this.musicKey === 'bgMusic2' ? 'bgMusic' : 'bgMusic2';
+        const otherMusic = this.sound.get(otherKey);
+        if (otherMusic) {
+            otherMusic.setVolume(step);
+        }
+
         this.highlightVolume();
     }
 
     highlightVolume() {
         this.volumeButtons.forEach(v => {
             if (Math.abs(v.step - this.musicVolume) < 0.01) {
-                v.bg.setFillStyle(0x44aa44);
+                v.bg.setFillStyle(this.activeColor);
             } else {
                 v.bg.setFillStyle(0x444444);
             }
         });
+    }
+
+    setScreenMode(mode) {
+        this.screenMode = mode;
+        localStorage.setItem('screenMode', mode);
+
+        if (mode === 'ENVELOP') {
+            this.scale.scaleMode = Phaser.Scale.ENVELOP;
+        } else {
+            this.scale.scaleMode = Phaser.Scale.FIT;
+        }
+        this.scale.refresh();
+
+        this.highlightScreenMode();
+    }
+
+    highlightScreenMode() {
+        if (this.screenMode === 'FIT') {
+            this.fitBtn.setBackgroundColor(this.activeColorHex);
+            this.envelopBtn.setBackgroundColor('#444444');
+        } else {
+            this.fitBtn.setBackgroundColor('#444444');
+            this.envelopBtn.setBackgroundColor(this.activeColorHex);
+        }
     }
 }
