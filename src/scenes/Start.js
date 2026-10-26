@@ -314,12 +314,48 @@ export class Start extends Phaser.Scene {
         this.pauseLayer = this.add.container(0, 0).setDepth(200);
 
         const dim = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.7);
-        const title = this.add.text(640, 120, 'ПАУЗА', {
-            fontSize: '72px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
+        const title = this.add.text(640, 60, 'ПАУЗА', {
+            fontSize: '64px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        const volLabel = this.add.text(640, 220, 'ГРОМКОСТЬ МУЗЫКИ:', {
-            fontSize: '28px', color: '#dddddd', fontFamily: 'Arial'
+        // --- РЕЖИМ ЭКРАНА (выше громкости) ---
+        const screenLabel = this.add.text(640, 150, 'Режим экрана:', {
+            fontSize: '26px', color: '#dddddd', fontFamily: 'Arial'
+        }).setOrigin(0.5);
+
+        this.screenMode = localStorage.getItem('screenMode') || 'FIT';
+
+        this.fitBtn = this.add.text(480, 220, 'СТАНДАРТ', {
+            fontSize: '26px', color: '#ffffff', backgroundColor: '#444444',
+            padding: { x: 22, y: 10 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        this.fitBtn.on('pointerover', () => {
+            if (this.screenMode !== 'FIT') this.fitBtn.setBackgroundColor('#666666');
+        });
+        this.fitBtn.on('pointerout', () => {
+            if (this.screenMode !== 'FIT') this.fitBtn.setBackgroundColor('#444444');
+        });
+        this.fitBtn.on('pointerdown', () => this.setScreenMode('FIT'));
+
+        this.envelopBtn = this.add.text(800, 220, 'РАСТЯНУТЬ', {
+            fontSize: '26px', color: '#ffffff', backgroundColor: '#444444',
+            padding: { x: 22, y: 10 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        this.envelopBtn.on('pointerover', () => {
+            if (this.screenMode !== 'ENVELOP') this.envelopBtn.setBackgroundColor('#666666');
+        });
+        this.envelopBtn.on('pointerout', () => {
+            if (this.screenMode !== 'ENVELOP') this.envelopBtn.setBackgroundColor('#444444');
+        });
+        this.envelopBtn.on('pointerdown', () => this.setScreenMode('ENVELOP'));
+
+        this.highlightScreenMode();
+
+        // --- ГРОМКОСТЬ (ниже экрана, меньше на 30%) ---
+        const volLabel = this.add.text(640, 290, 'Громкость музыки:', {
+            fontSize: '22px', color: '#dddddd', fontFamily: 'Arial'
         }).setOrigin(0.5);
 
         this.volumeButtons = [];
@@ -327,14 +363,14 @@ export class Start extends Phaser.Scene {
         const volumeLabels = ['0%', '25%', '50%', '75%', '100%'];
 
         volumeSteps.forEach((step, i) => {
-            const x = 380 + i * 130;
-            const y = 280;
+            const x = 430 + i * 105;
+            const y = 340;
 
-            const bg = this.add.rectangle(x, y, 100, 60, 0x444444)
+            const bg = this.add.rectangle(x, y, 70, 35, 0x444444)
                 .setInteractive({ useHandCursor: true });
 
             const label = this.add.text(x, y, volumeLabels[i], {
-                fontSize: '24px', color: '#ffffff', fontFamily: 'Arial',
+                fontSize: '16px', color: '#ffffff', fontFamily: 'Arial',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
 
@@ -349,8 +385,11 @@ export class Start extends Phaser.Scene {
             this.volumeButtons.push({ bg, label, step });
         });
 
-        this.controlBtn = this.add.text(640, 370, this.controlMode === 'keyboard' ? 'УПРАВЛЕНИЕ: КЛАВИАТУРА' : 'УПРАВЛЕНИЕ: МЫШЬ', {
-            fontSize: '32px', color: '#ffffff', backgroundColor: '#444444',
+        this.highlightVolume();
+
+        // --- УПРАВЛЕНИЕ ---
+        this.controlBtn = this.add.text(640, 400, this.controlMode === 'keyboard' ? 'УПРАВЛЕНИЕ: КЛАВИАТУРА' : 'УПРАВЛЕНИЕ: МЫШЬ', {
+            fontSize: '28px', color: '#ffffff', backgroundColor: '#444444',
             padding: { x: 25, y: 10 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -358,8 +397,9 @@ export class Start extends Phaser.Scene {
         this.controlBtn.on('pointerout', () => this.controlBtn.setBackgroundColor('#444444'));
         this.controlBtn.on('pointerdown', () => this.toggleControl());
 
-        const resumeBtn = this.add.text(640, 460, 'ПРОДОЛЖИТЬ', {
-            fontSize: '40px', color: '#ffffff', backgroundColor: '#44aa44',
+        // --- ПРОДОЛЖИТЬ / ГЛАВНОЕ МЕНЮ ---
+        const resumeBtn = this.add.text(640, 480, 'ПРОДОЛЖИТЬ', {
+            fontSize: '36px', color: '#ffffff', backgroundColor: '#44aa44',
             padding: { x: 30, y: 12 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -367,8 +407,8 @@ export class Start extends Phaser.Scene {
         resumeBtn.on('pointerout', () => resumeBtn.setBackgroundColor('#44aa44'));
         resumeBtn.on('pointerdown', () => this.resumeGame());
 
-        const menuBtn = this.add.text(640, 550, 'ГЛАВНОЕ МЕНЮ', {
-            fontSize: '40px', color: '#ffffff', backgroundColor: '#884444',
+        const menuBtn = this.add.text(640, 560, 'ГЛАВНОЕ МЕНЮ', {
+            fontSize: '36px', color: '#ffffff', backgroundColor: '#884444',
             padding: { x: 30, y: 12 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -380,11 +420,9 @@ export class Start extends Phaser.Scene {
             this.scene.start('Menu');
         });
 
-        this.pauseLayer.add([dim, title, volLabel]);
+        this.pauseLayer.add([dim, title, screenLabel, this.fitBtn, this.envelopBtn, volLabel]);
         this.volumeButtons.forEach(v => this.pauseLayer.add([v.bg, v.label]));
         this.pauseLayer.add([this.controlBtn, resumeBtn, menuBtn]);
-
-        this.highlightVolume();
     }
 
     setVolume(step) {
@@ -425,6 +463,30 @@ export class Start extends Phaser.Scene {
             this.controlMode === 'keyboard' ? 'УПРАВЛЕНИЕ: КЛАВИАТУРА' : 'УПРАВЛЕНИЕ: МЫШЬ'
         );
         this.bindControls();
+    }
+
+    setScreenMode(mode) {
+        this.screenMode = mode;
+        localStorage.setItem('screenMode', mode);
+
+        if (mode === 'ENVELOP') {
+            this.scale.scaleMode = Phaser.Scale.ENVELOP;
+        } else {
+            this.scale.scaleMode = Phaser.Scale.FIT;
+        }
+        this.scale.refresh();
+
+        this.highlightScreenMode();
+    }
+
+    highlightScreenMode() {
+        if (this.screenMode === 'FIT') {
+            this.fitBtn.setBackgroundColor('#44aa44');
+            this.envelopBtn.setBackgroundColor('#444444');
+        } else {
+            this.fitBtn.setBackgroundColor('#444444');
+            this.envelopBtn.setBackgroundColor('#44aa44');
+        }
     }
 
     resumeGame() {
@@ -589,7 +651,6 @@ export class Start extends Phaser.Scene {
                         this.hitSound.play();
                     }
 
-                    // Броня или жизнь
                     if (this.armor > 0) {
                         this.armor--;
                         this.updateHealthIcon();
@@ -599,7 +660,6 @@ export class Start extends Phaser.Scene {
                         this.checkGameOver();
                     }
 
-                    // Бомба отлетает — и при броне, и при уроне
                     this.tweens.killTweensOf(enemy);
                     this.enemies.remove(enemy);
 
