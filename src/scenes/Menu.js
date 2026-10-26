@@ -68,11 +68,7 @@ export class Menu extends Phaser.Scene {
         const bgKey = (useSpace2 && this.textures.exists('space2')) ? 'space2' : 'background';
         this.add.image(640, 360, bgKey).setDisplaySize(1280, 720);
 
-        if (useSpace2) {
-            this.cameras.main.shake(400, 0.015);
-        }
-
-        // --- МЕТЕЛЬ ---
+        // --- МЕТЕЛЬ (только на space2) ---
         this.snowflakes = [];
         if (bgKey === 'space2') {
             if (!this.textures.exists('snowflake')) {
