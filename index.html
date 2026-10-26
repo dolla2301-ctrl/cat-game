@@ -72,10 +72,18 @@
         </a>
     </div>
 
-    <!-- Firebase -->
+    <!-- Firebase — загружается ОДИН РАЗ при старте -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-        import { getDatabase } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
+        import {
+            getDatabase,
+            ref,
+            get,
+            query,
+            orderByChild,
+            limitToLast,
+            push
+        } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAAXwTzC0sMcozw8gI3YXCAyntLe12I1Tw",
@@ -89,6 +97,14 @@
 
         const app = initializeApp(firebaseConfig);
         window.db = getDatabase(app);
+
+        // Сохраняем функции в window, чтобы Start.js и Scores.js их видели
+        window.fbRef = ref;
+        window.fbGet = get;
+        window.fbQuery = query;
+        window.fbOrderByChild = orderByChild;
+        window.fbLimitToLast = limitToLast;
+        window.fbPush = push;
     </script>
 
     <script src="./phaser.js"></script>
