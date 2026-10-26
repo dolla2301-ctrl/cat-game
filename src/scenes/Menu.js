@@ -28,10 +28,8 @@ export class Menu extends Phaser.Scene {
         const useSpace2 = this.registry.get('useSpace2')
             ?? (localStorage.getItem('useSpace2') === 'true');
 
-        // Цвета, зависящие от hat11
         this.donateColor = useSpace2 ? '#aa0000' : '#aa8800';
         this.donateColorHover = useSpace2 ? '#cc2222' : '#ccaa22';
-        this.volumeActiveColor = useSpace2 ? 0xaa0000 : 0x44aa44;
         const socialColor = useSpace2 ? 0xaa0000 : 0x3a6ea5;
         const socialColorHover = useSpace2 ? 0xcc2222 : 0x4a8ec5;
 
@@ -70,12 +68,11 @@ export class Menu extends Phaser.Scene {
         const bgKey = (useSpace2 && this.textures.exists('space2')) ? 'space2' : 'background';
         this.add.image(640, 360, bgKey).setDisplaySize(1280, 720);
 
-        // Тряска в меню, если пришли с hat11 (мягкая)
         if (useSpace2) {
             this.cameras.main.shake(400, 0.015);
         }
 
-        // --- МЕТЕЛЬ (только на space2) ---
+        // --- МЕТЕЛЬ ---
         this.snowflakes = [];
         if (bgKey === 'space2') {
             if (!this.textures.exists('snowflake')) {
@@ -137,6 +134,7 @@ export class Menu extends Phaser.Scene {
         // --- КНОПКИ ---
         this.createButton(640, 400, 'НАЧАТЬ ИГРУ', () => this.scene.start('Start'));
 
+        // ДОНАТ
         const donateBtn = this.add.text(640, 460, 'ДОНАТ АВТОРУ', {
             fontSize: '28px', color: '#ffffff', backgroundColor: this.donateColor,
             padding: { x: 20, y: 10 }
@@ -148,8 +146,11 @@ export class Menu extends Phaser.Scene {
             window.location.href = 'https://www.donationalerts.com/r/donutdobrychki';
         });
 
-        this.createButton(640, 520, 'ОДЕЖДА', () => this.scene.start('Wardrobe'));
-        this.createButton(640, 580, 'СЧЁТ', () => this.scene.start('Scores'));
+        // НАСТРОЙКИ — под донатом
+        this.createButton(640, 520, 'НАСТРОЙКИ', () => this.scene.start('Settings'));
+
+        this.createButton(640, 580, 'ОДЕЖДА', () => this.scene.start('Wardrobe'));
+        this.createButton(640, 640, 'СЧЁТ', () => this.scene.start('Scores'));
 
         // --- БЛОК 1 (СЛЕВА): АВАТАРКА + СОЦСЕТИ ---
         const btnW = 80;
@@ -193,49 +194,6 @@ export class Menu extends Phaser.Scene {
         tgBg.on('pointerup', () => {
             window.location.href = 'https://t.me/m4a34';
         });
-
-        // --- БЛОК 2 (СПРАВА): ГРОМКОСТЬ ---
-        const volBtnW = 40;
-        const volBtnH = 54;
-        const volGap = 7;
-        const volTotalW = volBtnW * 5 + volGap * 4;
-
-        const rightBlockLeft = 1280 - blockLeft - volTotalW;
-        const rightBlockCenterX = rightBlockLeft + volTotalW / 2;
-
-        this.add.rectangle(rightBlockCenterX, 615, volTotalW, 40, 0x000000, 0.55);
-        this.add.text(rightBlockCenterX, 615, 'Громкость:', {
-            fontSize: '26px', color: '#ffffff', fontFamily: 'Arial'
-        }).setOrigin(0.5);
-
-        this.volumeButtons = [];
-        const volumeSteps = [0, 0.25, 0.5, 0.75, 1.0];
-        const volumeLabels = ['0', '25', '50', '75', '100'];
-
-        volumeSteps.forEach((step, i) => {
-            const x = rightBlockLeft + i * (volBtnW + volGap) + volBtnW / 2;
-            const y = 670;
-
-            const bg = this.add.rectangle(x, y, volBtnW, volBtnH, 0x444444)
-                .setInteractive({ useHandCursor: true });
-
-            const label = this.add.text(x, y, volumeLabels[i], {
-                fontSize: '18px', color: '#ffffff', fontFamily: 'Arial',
-                fontStyle: 'bold'
-            }).setOrigin(0.5);
-
-            bg.on('pointerover', () => {
-                if (Math.abs(this.musicVolume - step) > 0.01) bg.setFillStyle(0x666666);
-            });
-            bg.on('pointerout', () => {
-                if (Math.abs(this.musicVolume - step) > 0.01) bg.setFillStyle(0x444444);
-            });
-            bg.on('pointerdown', () => this.setMenuVolume(step));
-
-            this.volumeButtons.push({ bg, label, step });
-        });
-
-        this.highlightMenuVolume();
     }
 
     update() {
@@ -254,33 +212,6 @@ export class Menu extends Phaser.Scene {
                 flake.y = Phaser.Math.Between(-100, -20);
                 flake.x = Phaser.Math.Between(-100, 200);
                 flake.alpha = Phaser.Math.FloatBetween(0.3, 0.9);
-            }
-        });
-    }
-
-    setMenuVolume(step) {
-        this.musicVolume = step;
-        localStorage.setItem('musicVolume', String(step));
-
-        if (this.bgMusic) {
-            if (step > 0) {
-                if (!this.bgMusic.isPlaying) this.bgMusic.play();
-                this.bgMusic.setVolume(step);
-            } else {
-                if (this.bgMusic.isPlaying) this.bgMusic.pause();
-                this.bgMusic.setVolume(0);
-            }
-        }
-
-        this.highlightMenuVolume();
-    }
-
-    highlightMenuVolume() {
-        this.volumeButtons.forEach(v => {
-            if (Math.abs(v.step - this.musicVolume) < 0.01) {
-                v.bg.setFillStyle(this.volumeActiveColor);
-            } else {
-                v.bg.setFillStyle(0x444444);
             }
         });
     }
