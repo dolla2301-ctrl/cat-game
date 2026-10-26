@@ -596,16 +596,35 @@ export class Start extends Phaser.Scene {
     }
 
     saveRecord(name, score, equipped) {
-        const KEY = 'catGameRecords';
-        const records = JSON.parse(localStorage.getItem(KEY) || '[]');
-        records.push({
-            name: name,
-            score: score,
-            equipped: equipped,
-            date: Date.now()
-        });
-        records.sort((a, b) => b.score - a.score);
-        localStorage.setItem(KEY, JSON.stringify(records.slice(0, 50)));
+        // Fallback на localStorage, если Firebase не подключился
+        if (!window.db) {
+            console.warn('Firebase не подключён, сохраняем локально');
+            const KEY = 'catGameRecords';
+            const records = JSON.parse(localStorage.getItem(KEY) || '[]');
+            records.push({ name, score, equipped, date: Date.now() });
+            records.sort((a, b) => b.score - a.score);
+            localStorage.setItem(KEY, JSON.stringify(records.slice(0, 50)));
+            return;
+        }
+
+        import('https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js')
+            .then(({ ref, push }) => {
+                const scoresRef = ref(window.db, 'scores');
+                push(scoresRef, {
+                    name: name,
+                    score: score,
+                    equipped: equipped,
+                    date: Date.now()
+                });
+            })
+            .catch(err => {
+                console.error('Ошибка сохранения в Firebase:', err);
+                const KEY = 'catGameRecords';
+                const records = JSON.parse(localStorage.getItem(KEY) || '[]');
+                records.push({ name, score, equipped, date: Date.now() });
+                records.sort((a, b) => b.score - a.score);
+                localStorage.setItem(KEY, JSON.stringify(records.slice(0, 50)));
+            });
     }
 
     update() {
