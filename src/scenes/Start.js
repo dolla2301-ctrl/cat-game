@@ -592,7 +592,7 @@ export class Start extends Phaser.Scene {
     }
 
     saveRecord(name, score, equipped) {
-        if (!window.db || !window.fbRef || !window.fbPush) {
+        if (!window.db || !window.fbRef || !window.fbSet) {
             console.warn('Firebase не подключён, сохраняем локально');
             const KEY = 'catGameRecords';
             const records = JSON.parse(localStorage.getItem(KEY) || '[]');
@@ -603,8 +603,11 @@ export class Start extends Phaser.Scene {
         }
 
         try {
-            const scoresRef = window.fbRef(window.db, 'scores');
-            window.fbPush(scoresRef, {
+            // Ключ = имя (без спецсимволов Firebase). При повторной записи старая перезапишется
+            const nameKey = name.replace(/[.#$[\]]/g, '_');
+            const scoreRef = window.fbRef(window.db, 'scores/' + nameKey);
+
+            window.fbSet(scoreRef, {
                 name: name,
                 score: score,
                 equipped: equipped,
