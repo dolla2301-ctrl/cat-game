@@ -13,7 +13,9 @@ const config = {
     pixelArt: true,
     roundPixels: true,
     scale: {
-        mode: Phaser.Scale.FIT,
+        mode: (localStorage.getItem('screenMode') === 'ENVELOP')
+            ? Phaser.Scale.ENVELOP
+            : Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
     scene: [Menu, Wardrobe, Start, Scores, Settings]
