@@ -85,7 +85,7 @@ export class Scores extends Phaser.Scene {
         this.recordsLayer.add(loadingText);
 
         // Если Firebase не подключён — fallback на localStorage
-        if (!window.db || !window.fbRef) {
+        if (!window.db || !window.fbRef || !window.fbGet || !window.fbQuery) {
             const records = JSON.parse(localStorage.getItem('catGameRecords') || '[]');
             this.renderRecords(records);
             return;
@@ -99,7 +99,12 @@ export class Scores extends Phaser.Scene {
                 window.fbLimitToLast(50)
             );
 
-            window.fbGet(topQuery)
+            // Таймаут на 3 секунды — если Firebase не ответит, покажем локальные
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Firebase timeout')), 3000)
+            );
+
+            Promise.race([window.fbGet(topQuery), timeoutPromise])
                 .then(snapshot => {
                     const records = [];
                     if (snapshot.exists()) {
@@ -111,7 +116,7 @@ export class Scores extends Phaser.Scene {
                     this.renderRecords(records);
                 })
                 .catch(err => {
-                    console.error('Ошибка чтения из Firebase:', err);
+                    console.error('Ошибка/таймаут чтения из Firebase:', err);
                     const records = JSON.parse(localStorage.getItem('catGameRecords') || '[]');
                     this.renderRecords(records);
                 });
