@@ -27,16 +27,13 @@ export class Scores extends Phaser.Scene {
             fontSize: '56px', color: '#ffffff', fontFamily: 'Arial', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        // Контейнер для таблицы
         this.recordsLayer = this.add.container(0, 0);
         this.scrollOffset = 0;
         this.maxScroll = 0;
         this.visibleRows = 4;
         this.allRecords = [];
 
-        this.drawTable();
-
-        // --- КНОПКИ СКРОЛЛА (вверх/вниз) ---
+        // Стрелки скролла — ДО drawTable()
         this.upBtn = this.add.text(1180, 250, '▲', {
             fontSize: '48px', color: '#ffffff', backgroundColor: '#444444',
             padding: { x: 15, y: 8 }
@@ -55,13 +52,16 @@ export class Scores extends Phaser.Scene {
         this.downBtn.on('pointerout', () => this.downBtn.setBackgroundColor('#444444'));
         this.downBtn.on('pointerdown', () => this.scrollRecords(1));
 
-        // --- СКРОЛЛ КОЛЁСИКОМ (ПК) ---
+        // Колёсико мыши
         this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
             if (deltaY > 0) this.scrollRecords(1);
             else if (deltaY < 0) this.scrollRecords(-1);
         });
 
-        // --- КНОПКА НАЗАД ---
+        // Загружаем рекорды
+        this.drawTable();
+
+        // Кнопка Назад
         const backBtn = this.add.text(640, 680, 'НАЗАД', {
             fontSize: '32px', color: '#ffffff', backgroundColor: '#884444',
             padding: { x: 20, y: 10 }
@@ -84,33 +84,42 @@ export class Scores extends Phaser.Scene {
         }).setOrigin(0.5);
         this.recordsLayer.add(loadingText);
 
-        if (!window.db) {
+        // Если Firebase не подключён — fallback на localStorage
+        if (!window.db || !window.fbRef) {
             const records = JSON.parse(localStorage.getItem('catGameRecords') || '[]');
             this.renderRecords(records);
             return;
         }
 
-        import('https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js')
-            .then(({ ref, get, query, orderByChild, limitToLast }) => {
-                const scoresRef = ref(window.db, 'scores');
-                const topQuery = query(scoresRef, orderByChild('score'), limitToLast(50));
-                return get(topQuery);
-            })
-            .then(snapshot => {
-                const records = [];
-                if (snapshot.exists()) {
-                    snapshot.forEach(child => {
-                        records.push(child.val());
-                    });
-                }
-                records.reverse();
-                this.renderRecords(records);
-            })
-            .catch(err => {
-                console.error('Ошибка чтения из Firebase:', err);
-                const records = JSON.parse(localStorage.getItem('catGameRecords') || '[]');
-                this.renderRecords(records);
-            });
+        try {
+            const scoresRef = window.fbRef(window.db, 'scores');
+            const topQuery = window.fbQuery(
+                scoresRef,
+                window.fbOrderByChild('score'),
+                window.fbLimitToLast(50)
+            );
+
+            window.fbGet(topQuery)
+                .then(snapshot => {
+                    const records = [];
+                    if (snapshot.exists()) {
+                        snapshot.forEach(child => {
+                            records.push(child.val());
+                        });
+                    }
+                    records.reverse();
+                    this.renderRecords(records);
+                })
+                .catch(err => {
+                    console.error('Ошибка чтения из Firebase:', err);
+                    const records = JSON.parse(localStorage.getItem('catGameRecords') || '[]');
+                    this.renderRecords(records);
+                });
+        } catch (err) {
+            console.error('Ошибка Firebase:', err);
+            const records = JSON.parse(localStorage.getItem('catGameRecords') || '[]');
+            this.renderRecords(records);
+        }
     }
 
     renderRecords(records) {
@@ -130,7 +139,6 @@ export class Scores extends Phaser.Scene {
 
         this.maxScroll = Math.max(0, records.length - this.visibleRows);
 
-        // Если скролл ушёл за пределы — корректируем
         if (this.scrollOffset > this.maxScroll) {
             this.scrollOffset = this.maxScroll;
         }
@@ -168,14 +176,13 @@ export class Scores extends Phaser.Scene {
             this.recordsLayer.add(scoreText);
         });
 
-        // Показываем/скрываем кнопки скролла
         this.upBtn.setVisible(this.scrollOffset > 0);
         this.downBtn.setVisible(this.scrollOffset < this.maxScroll);
 
-        // Подсказка внизу
         if (records.length > this.visibleRows) {
             const hint = this.add.text(640, 660, `Показаны ${this.scrollOffset + 1}–${Math.min(this.scrollOffset + this.visibleRows, records.length)} из ${records.length}`, {
-                fontSize: '20px', color: '#aaaaaa', fontFamily: 'Arial'
+                fontSize: '20px', color: '#ffffff', fontFamily: 'Arial',
+                backgroundColor: '#00000088', padding: { x: 15, y: 6 }
             }).setOrigin(0.5);
             this.recordsLayer.add(hint);
         }
