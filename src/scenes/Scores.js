@@ -185,8 +185,8 @@ export class Scores extends Phaser.Scene {
         this.downBtn.setVisible(this.scrollOffset < this.maxScroll);
 
         if (records.length > this.visibleRows) {
-            const hint = this.add.text(640, 660, `Показаны ${this.scrollOffset + 1}–${Math.min(this.scrollOffset + this.visibleRows, records.length)} из ${records.length}`, {
-                fontSize: '20px', color: '#ffffff', fontFamily: 'Arial',
+            const hint = this.add.text(640, 600, `Показаны ${this.scrollOffset + 1}–${Math.min(this.scrollOffset + this.visibleRows, records.length)} из ${records.length}`, {
+                fontSize: '27px', color: '#ffffff', fontFamily: 'Arial',
                 backgroundColor: '#00000088', padding: { x: 15, y: 6 }
             }).setOrigin(0.5);
             this.recordsLayer.add(hint);
