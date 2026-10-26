@@ -45,7 +45,45 @@ export class Scores extends Phaser.Scene {
     drawTable() {
         this.recordsLayer.removeAll(true);
 
-        const records = JSON.parse(localStorage.getItem('catGameRecords') || '[]');
+        // Показываем "Загрузка", пока тянем из Firebase
+        const loadingText = this.add.text(640, 360, 'Загрузка рекордов...', {
+            fontSize: '28px', color: '#cccccc', fontFamily: 'Arial'
+        }).setOrigin(0.5);
+        this.recordsLayer.add(loadingText);
+
+        if (!window.db) {
+            // Fallback на localStorage
+            const records = JSON.parse(localStorage.getItem('catGameRecords') || '[]');
+            this.renderRecords(records);
+            return;
+        }
+
+        // Загружаем топ-10 из Firebase
+        import('https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js')
+            .then(({ ref, get, query, orderByChild, limitToLast }) => {
+                const scoresRef = ref(window.db, 'scores');
+                const topQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+                return get(topQuery);
+            })
+            .then(snapshot => {
+                const records = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        records.push(child.val());
+                    });
+                }
+                records.reverse(); // Firebase отдаёт по возрастанию
+                this.renderRecords(records);
+            })
+            .catch(err => {
+                console.error('Ошибка чтения из Firebase:', err);
+                const records = JSON.parse(localStorage.getItem('catGameRecords') || '[]');
+                this.renderRecords(records);
+            });
+    }
+
+    renderRecords(records) {
+        this.recordsLayer.removeAll(true);
 
         if (records.length === 0) {
             const empty = this.add.text(640, 360, 'Пока нет рекордов.\nСыграй и сохрани свой!', {
@@ -86,15 +124,6 @@ export class Scores extends Phaser.Scene {
                 fontSize: '40px', color: '#88ff88', fontFamily: 'Arial', fontStyle: 'bold'
             }).setOrigin(1, 0.5);
             this.recordsLayer.add(scoreText);
-
-            const realIndex = records.indexOf(rec);
-            const cross = this.add.text(1100, y, '✕', {
-                fontSize: '36px', color: '#ff6666', fontFamily: 'Arial', fontStyle: 'bold'
-            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-            cross.on('pointerover', () => cross.setColor('#ff2222').setScale(1.2));
-            cross.on('pointerout', () => cross.setColor('#ff6666').setScale(1.0));
-            cross.on('pointerdown', () => this.deleteRecord(realIndex));
-            this.recordsLayer.add(cross);
         });
 
         if (records.length > maxRows) {
@@ -103,18 +132,6 @@ export class Scores extends Phaser.Scene {
             }).setOrigin(0.5);
             this.recordsLayer.add(hint);
         }
-    }
-
-    deleteRecord(index) {
-        const KEY = 'catGameRecords';
-        const records = JSON.parse(localStorage.getItem(KEY) || '[]');
-
-        if (index < 0 || index >= records.length) return;
-
-        records.splice(index, 1);
-        localStorage.setItem(KEY, JSON.stringify(records));
-
-        this.drawTable();
     }
 
     addAvatar(cx, cy, equipped) {
