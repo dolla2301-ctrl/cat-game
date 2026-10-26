@@ -82,7 +82,8 @@
             query,
             orderByChild,
             limitToLast,
-            push
+            push,
+            set
         } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -98,13 +99,14 @@
         const app = initializeApp(firebaseConfig);
         window.db = getDatabase(app);
 
-        // Сохраняем функции в window, чтобы Start.js и Scores.js их видели
+        // Функции Firebase в window — чтобы Start.js и Scores.js их видели
         window.fbRef = ref;
         window.fbGet = get;
         window.fbQuery = query;
         window.fbOrderByChild = orderByChild;
         window.fbLimitToLast = limitToLast;
         window.fbPush = push;
+        window.fbSet = set;
     </script>
 
     <script src="./phaser.js"></script>
